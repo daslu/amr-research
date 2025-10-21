@@ -49,7 +49,8 @@
                            path))))
          tc/dataset
          (tc/rename-columns [:site :year :code :path])
-         (tc/map-columns :year :year #(Integer/parseInt %))))))
+         (tc/map-columns :year :year #(Integer/parseInt %))
+         (tc/map-columns :site :site keyword)))))
 
 (comment
   (raw-files-dataset {}))
@@ -103,3 +104,13 @@
   (load-metadata {:site :A
                   :year 2018}))
 
+(defn example-path []
+  (-> (raw-files-dataset {})
+      (tc/select-rows #(and (= (:year %) 2018)
+                            (= (:site %) :A)))
+      :path
+      first))
+
+
+(comment
+  (load-raw-spectrum (example-path)))
