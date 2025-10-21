@@ -13,14 +13,14 @@
            [com.github.psambit9791.jdsp.misc UtilMethods]))
 
 (defn sqrt-transform
-  "Apply square root transformation to intensities.
-   Common preprocessing step to reduce noise and improve peak shape."
-  [spectrum]
-  (errors/with-error-handling errors/data-error {:operation :sqrt-transform}
-    (-> spectrum
-        (tc/add-or-replace-column :intensity
-                                  #(tcc/sqrt (:intensity %))))))
+  "Args:
+   - intensities
 
+   Apply square root transformation to intensities.
+   Common preprocessing step to reduce noise and improve peak shape."
+  [intensities]
+  (errors/with-error-handling errors/data-error {:operation :sqrt-transform}
+    (tcc/sqrt intensities)))
 
 (defn savitzky-golay-smooth
   "Apply Savitzky-Golay smoothing to spectrum intensities.
@@ -50,7 +50,7 @@
 
     ;; Use JDSP Savgol filter
     (let [savgol (Savgol. window-size polynomial-order)]
-      #(.filter savgol intensities))))
+      (.filter savgol (double-array intensities)))))
 
 
 (defn snip-baseline-removal
@@ -259,8 +259,9 @@
      (log/info "Starting spectrum preprocessing pipeline")
      (cond-> intensities
        sqrt-transform (sqrt-transform)
-       true (savitzky-golay-smooth smooth-window smooth-polynomial)
-       true (snip-baseline-removal baseline-iterations)
-       tic-normalize (tic-normalize tic-target)))))
+       true (savitzky-golay-smooth {:window-size smooth-window
+                                    :polynomial-order smooth-polynomial})
+       true (snip-baseline-removal {:iterations baseline-iterations})
+       tic-normalize (tic-normalize {:target-sum tic-target})))))
 
 
