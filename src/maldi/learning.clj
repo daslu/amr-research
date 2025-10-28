@@ -5,7 +5,10 @@
             [tablecloth.api :as tc]
             [scicloj.tableplot.v1.plotly :as plotly]
             [tech.v3.parallel.for :as pfor]
-            [scicloj.metamorph.ml :as ml]))
+            [tech.v3.datatype :as dtype]
+            [tech.v3.tensor :as tensor]
+            [scicloj.metamorph.ml :as ml]
+            [tech.v3.dataset.modelling :as ds-mod]))
 
 
 (defn prepare-learning-data
@@ -34,7 +37,31 @@
                                                      preprocessing-params))
                                 (binning/bin-spectrum binning-params)))
                           (tc/rows ds :as-maps))))
-        (tc/select-rows :features))))
+        (tc/select-rows :features)
+        (tc/map-columns :ri antibiotic (complement #{"S"}))
+        (as->  ds
+            (tc/add-columns
+             ds
+             (-> ds
+                 :features
+                 tensor/->tensor
+                 (as-> t
+                     (zipmap (->> t
+                                  dtype/shape
+                                  second
+                                  range
+                                  (map (comp keyword (partial str "x"))))
+                             (tensor/transpose t [1 0])))
+                 tc/dataset)))
+        (as->  ds
+            (tc/select-columns
+             ds
+             (->> ds
+                  keys
+                  (filter #(re-matches #"x[0-9]*" (name %)))
+                  sort
+                  (cons :ri))))
+        (ds-mod/set-inference-target :ri))))
 
 
 (comment
@@ -46,6 +73,7 @@
     :preprocessing-params {}
     :binning-params {:range [2000 20000]
                      :step 3}}))
+
 
 
 
