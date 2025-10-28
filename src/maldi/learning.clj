@@ -8,10 +8,13 @@
             [tech.v3.datatype :as dtype]
             [tech.v3.tensor :as tensor]
             [scicloj.metamorph.ml :as ml]
-            [tech.v3.dataset.modelling :as ds-mod]))
+            [tech.v3.dataset.modelling :as ds-mod]
+            [maldi.data.bacteria :as bacteria]
+            [scicloj.ml.xgboost]
+            [maldi.cache :as cache]))
 
 
-(defn prepare-learning-data
+(defn prepare-ml-data
   "Prepare complete training dataset from cases"
   [{:keys [site year species antibiotic
            preprocessing-params binning-params]}]
@@ -63,16 +66,68 @@
                   (cons :ri))))
         (ds-mod/set-inference-target :ri))))
 
+(comment
+  (-> {:site :A
+       :year 2018
+       :species bacteria/E-coli
+       :antibiotic :Ciprofloxacin
+       :preprocessing-params {}
+       :binning-params {:range [2000 20000]
+                        :step 3}}
+      ((cache/cached-fn #'prepare-ml-data))
+      deref
+      time))
+
+(defn split [ml-data {:keys [seed]}]
+  (-> ml-data
+      cache/maybe-deref
+      (tc/split->seq :holdout {:seed seed})
+      first))
 
 (comment
-  (prepare-learning-data
-   {:site :A
-    :year 2018
-    :species "Escherichia coli"
-    :antibiotic :Ciprofloxacin
-    :preprocessing-params {}
-    :binning-params {:range [2000 20000]
-                     :step 3}}))
+  (-> {:site :A
+       :year 2018
+       :species bacteria/E-coli
+       :antibiotic :Ciprofloxacin
+       :preprocessing-params {}
+       :binning-params {:range [2000 20000]
+                        :step 3}}
+      ((cache/cached-fn #'prepare-ml-data))
+      ((cache/cached-fn #'split) {:seed 1})
+      deref
+      time))
+
+(defn train [split-data hyper]
+  (-> split-data
+      cache/maybe-deref
+      :train
+      (ml/train hyper)))
+
+(comment
+  (-> {:site :A
+       :year 2018
+       :species bacteria/E-coli
+       :antibiotic :Ciprofloxacin
+       :preprocessing-params {}
+       :binning-params {:range [2000 20000]
+                        :step 3}}
+      ((cache/cached-fn #'prepare-ml-data))
+      ((cache/cached-fn #'split) {:seed 1})
+      ((cache/cached-fn #'train) {:model-type :xgboost/classification
+                                  :round 10
+                                  :num-class 2})
+      deref
+      time))
+
+
+
+
+
+
+
+
+
+
 
 
 
