@@ -78,10 +78,7 @@
     :or {base-dir (base-dir-from-env)}}]
   (-> base-dir
       raw-files-dataset
-      (tc/rows :as-maps)
-      (->> (map (juxt :site :year :code)))
-      distinct
-      sort))
+      (tc/unique-by [:site :year :code])))
 
 (comment
   (available-cases {}))
@@ -95,10 +92,8 @@
                      (name site)
                      year
                      year)]
-    [path
-     (when (fs/exists? path)
-       (-> (tc/dataset path {:key-fn keyword})
-           (tc/rename-columns {:code :code})))]))
+    (when (fs/exists? path)
+      (tc/dataset path {:key-fn keyword}))))
 
 (comment
   (load-metadata {:site :A
@@ -109,7 +104,7 @@
       (tc/select-rows #(and (= (:year %) 2018)
                             (= (:site %) :A)))
       :path
-      first))
+      second))
 
 
 (comment

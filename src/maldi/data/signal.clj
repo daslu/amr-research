@@ -244,24 +244,23 @@
      - :tic-target (number)
    
    Returns: map with :masses and :intensities keys"
-  ([intensities {:as options
-                 :keys [sqrt-transform smooth-window smooth-polynomial
-                        baseline-iterations tic-normalize tic-target]
-                 :or {sqrt-transform true
-                      smooth-window 11
-                      smooth-polynomial 2
-                      baseline-iterations 25
-                      tic-normalize true
-                      tic-target 1.0}}]
-   (errors/with-error-handling errors/pipeline-error {:operation :preprocess-spectrum-data
-                                                      :options options}
+  [intensities {:as options
+                :keys [should-sqrt-transform smooth-window smooth-polynomial
+                       baseline-iterations should-tic-normalize tic-target]
+                :or {should-sqrt-transform true
+                     smooth-window 11
+                     smooth-polynomial 2
+                     baseline-iterations 25
+                     should-tic-normalize true
+                     tic-target 1.0}}]
+  (errors/with-error-handling errors/pipeline-error {:operation :preprocess-spectrum-data
+                                                     :options options}
 
-     (log/info "Starting spectrum preprocessing pipeline")
-     (cond-> intensities
-       sqrt-transform (sqrt-transform)
-       true (savitzky-golay-smooth {:window-size smooth-window
-                                    :polynomial-order smooth-polynomial})
-       true (snip-baseline-removal {:iterations baseline-iterations})
-       tic-normalize (tic-normalize {:target-sum tic-target})))))
-
+    (log/info "Starting spectrum preprocessing pipeline")
+    (cond-> intensities
+      should-sqrt-transform (sqrt-transform)
+      true (savitzky-golay-smooth {:window-size smooth-window
+                                   :polynomial-order smooth-polynomial})
+      true (snip-baseline-removal {:iterations baseline-iterations})
+      should-tic-normalize (tic-normalize {:target-sum tic-target}))))
 
