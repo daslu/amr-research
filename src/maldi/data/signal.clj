@@ -242,7 +242,7 @@
   ;; errors/with-error-handling errors/pipeline-error {:operation :preprocess-spectrum-data
   ;;                                                   :options options}
 
-  (log/info "Starting spectrum preprocessing pipeline")
+  #_(log/info "Starting spectrum preprocessing pipeline")
   
   (cond-> intensities
     should-sqrt-transform (sqrt-transform)
