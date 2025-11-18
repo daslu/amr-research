@@ -18,7 +18,7 @@
   "Prepare complete training dataset from cases"
   [{:keys [site year species antibiotic
            preprocessing-params binning-params]}]
-  (let [cases (ingestion/available-cases {})
+  (let [cases (ingestion/available-cases)
         metadata (ingestion/load-metadata {:site site
                                            :year year})
         filtered-cases-1 (-> cases
@@ -147,6 +147,8 @@
                              :ri))))
 
 
+
+
 (defn eval-case [{:keys [site year antibiotic]}]
   (let [ml-data (-> {:site site
                      :year year
@@ -180,16 +182,18 @@
                   (double-array (m 1)))}))))
 
 
+(delay
+  (-> (for [site [:A :B :C :D]
+            year [2015 2016 2017 2018]
+            antibiotic (ingestion/all-antibiotics)]
+        (let [acase {:site site
+                     :year year
+                     :antibiotic antibiotic}]
+          (prn [:case acase])
+          (eval-case acase)))
+      (->> (remove nil?))
+      tc/dataset
+      time))
 
-(-> (for [site [:A :B :C :D]
-          year [2015 2016 2017 2018]
-          antibiotic (ingestion/all-antibiotics {})]
-      (let [acase {:site site
-                   :year year
-                   :antibiotic antibiotic}]
-        (prn [:case acase])
-        (eval-case acase)))
-    (->> (remove nil?))
-    tc/dataset
-    time)
+
 
