@@ -4,7 +4,6 @@
   (:require [tech.v3.tensor :as tensor]
             [tech.v3.datatype :as dtype]
             [tech.v3.datatype.functional :as dfn]
-            [maldi.errors :as errors]
             [clojure.tools.logging :as log]
             [tablecloth.api :as tc]
             [tablecloth.column.api :as tcc]
@@ -19,8 +18,7 @@
    Apply square root transformation to intensities.
    Common preprocessing step to reduce noise and improve peak shape."
   [intensities]
-  (errors/with-error-handling errors/data-error {:operation :sqrt-transform}
-    (tcc/sqrt intensities)))
+  (tcc/sqrt intensities))
 
 (defn savitzky-golay-smooth
   "Apply Savitzky-Golay smoothing to spectrum intensities.
@@ -34,23 +32,20 @@
   [intensities {:keys [window-size polynomial-order]
                 :or {window-size 11
                      polynomial-order 2}}]
-  (errors/with-error-handling errors/data-error {:operation :savitzky-golay-smooth
-                                                 :window-size window-size
-                                                 :polynomial-order polynomial-order}
 
-    ;; Validate parameters
-    (when (even? window-size)
-      (throw (ex-info "Window size must be odd" {:window-size window-size})))
+  ;; Validate parameters
+  (when (even? window-size)
+    (throw (ex-info "Window size must be odd" {:window-size window-size})))
 
-    (let [n (dtype/ecount intensities)]
-      (when (< n window-size)
-        (throw (ex-info "Not enough data points for smoothing window"
-                        {:data-points n
-                         :window-size window-size}))))
+  (let [n (dtype/ecount intensities)]
+    (when (< n window-size)
+      (throw (ex-info "Not enough data points for smoothing window"
+                      {:data-points n
+                       :window-size window-size}))))
 
-    ;; Use JDSP Savgol filter
-    (let [savgol (Savgol. window-size polynomial-order)]
-      (.filter savgol (double-array intensities)))))
+  ;; Use JDSP Savgol filter
+  (let [savgol (Savgol. window-size polynomial-order)]
+    (.filter savgol (double-array intensities))))
 
 
 (defn snip-baseline-removal
@@ -71,39 +66,37 @@
   [intensities {:keys [iterations decreasing]
                 :or {iterations 25
                      decreasing false}}]
-  (errors/with-error-handling errors/data-error {:operation :snip-baseline-removal
-                                                 :iterations iterations}
 
-    (when (<= iterations 0)
-      (throw (ex-info "Iterations must be positive" {:iterations iterations})))
+  (when (<= iterations 0)
+    (throw (ex-info "Iterations must be positive" {:iterations iterations})))
 
-    (let [n (dtype/ecount intensities)]
+  (let [n (dtype/ecount intensities)]
 
-      (when (< n 3)
-        (throw (ex-info "Need at least 3 data points for SNIP baseline removal"
-                        {:data-points n})))
+    (when (< n 3)
+      (throw (ex-info "Need at least 3 data points for SNIP baseline removal"
+                      {:data-points n})))
 
-      ;; Initialize working copy (will become the baseline estimate)
-      (let [working (double-array intensities)
-            indices (if decreasing
-                      (reverse (range n))
-                      (range n))]
+    ;; Initialize working copy (will become the baseline estimate)
+    (let [working (double-array intensities)
+          indices (if decreasing
+                    (reverse (range n))
+                    (range n))]
 
-        ;; SNIP iterations with increasing window size
-        (doseq [window-half (range 1 (inc iterations))]
-          (doseq [i (-> (range window-half (- n window-half))
-                        (cond-> decreasing reverse))]
-            (let [;; Linear interpolation between surrounding points
-                  interpolated (* 0.5 (+ (aget working (- i window-half))
-                                         (aget working (+ i window-half))))
-                  
-                  current-val (aget working i)]
+      ;; SNIP iterations with increasing window size
+      (doseq [window-half (range 1 (inc iterations))]
+        (doseq [i (-> (range window-half (- n window-half))
+                      (cond-> decreasing reverse))]
+          (let [;; Linear interpolation between surrounding points
+                interpolated (* 0.5 (+ (aget working (- i window-half))
+                                       (aget working (+ i window-half))))
+                
+                current-val (aget working i)]
 
-              ;; SNIP clipping: keep minimum of current and interpolated
-              (aset working i (min current-val interpolated)))))
+            ;; SNIP clipping: keep minimum of current and interpolated
+            (aset working i (min current-val interpolated)))))
 
-        ;; Return baseline-corrected intensities (original - baseline)
-        (tcc/- intensities working)))))
+      ;; Return baseline-corrected intensities (original - baseline)
+      (tcc/- intensities working))))
 
 
 (defn tic-normalize
@@ -119,22 +112,20 @@
    Note: If all intensities are zero, returns zeros (graceful handling)"
   ([intensities {:keys [target-sum]
                  :or {target-sum 1}}]
-   (errors/with-error-handling errors/data-error {:operation :tic-normalize
-                                                  :target-sum target-sum}
-     
-     (let [current-sum (tcc/sum intensities)]
-       (if (zero? current-sum)
-         (do
-           (log/warn "Cannot normalize zero signal - all intensities are zero. Returning zeros.")
-           (dtype/make-reader :float32
-                              (dtype/ecount intensities)
-                              0.0))
+   
+   (let [current-sum (tcc/sum intensities)]
+     (if (zero? current-sum)
+       (do
+         (log/warn "Cannot normalize zero signal - all intensities are zero. Returning zeros.")
+         (dtype/make-reader :float32
+                            (dtype/ecount intensities)
+                            0.0))
 
-         ;; else
-         (do (when (< current-sum 1e-10)
-               (log/warn (format "Very small intensity sum detected: %e. Normalization may be unstable." current-sum)))
-             (tcc// intensities
-                    (tcc/sum intensities))))))))
+       ;; else
+       (do (when (< current-sum 1e-10)
+             (log/warn (format "Very small intensity sum detected: %e. Normalization may be unstable." current-sum)))
+           (tcc// intensities
+                  (tcc/sum intensities)))))))
 
 
 (defn median-filter
@@ -147,25 +138,23 @@
    Returns: median-filtered intensities tensor"
   [intensities {:keys [window-size]
                 :or {window-size 5}}]
-  (errors/with-error-handling errors/data-error {:operation :median-filter
-                                                 :window-size window-size}
 
-    (when (even? window-size)
-      (throw (ex-info "Window size must be odd" {:window-size window-size})))
+  (when (even? window-size)
+    (throw (ex-info "Window size must be odd" {:window-size window-size})))
 
-    (let [n (dtype/ecount intensities)
-          half-window (quot window-size 2)
-          result (double-array n)]
+  (let [n (dtype/ecount intensities)
+        half-window (quot window-size 2)
+        result (double-array n)]
 
-      (doseq [i (range n)]
-        (let [start (max 0 (- i half-window))
-              end (min n (+ i half-window 1))
-              window-vals (dtype/sub-buffer intensities
-                                            start
-                                            (- end start))]
-          (aset result i (tcc/median window-vals))))
+    (doseq [i (range n)]
+      (let [start (max 0 (- i half-window))
+            end (min n (+ i half-window 1))
+            window-vals (dtype/sub-buffer intensities
+                                          start
+                                          (- end start))]
+        (aset result i (tcc/median window-vals))))
 
-      result)))
+    result))
 
 
 (defn find-peaks
@@ -181,54 +170,51 @@
    {:keys [min-height min-distance]
     :or {min-height 0
          min-distance 1}}]
-  (errors/with-error-handling errors/data-error {:operation :find-peaks
-                                                 :min-height min-height
-                                                 :min-distance min-distance}
 
-    (let [n (dtype/ecount intensities)]
+  (let [n (dtype/ecount intensities)]
 
-      (when (< n 1)
-        (throw (ex-info "Cannot find peaks in empty data" {})))
+    (when (< n 1)
+      (throw (ex-info "Cannot find peaks in empty data" {})))
 
-      (if (= n 1)
-        ;; Single point - treat as peak if meets criteria
-        (if (>= (first intensities) min-height)
-          [0]
-          [])
-        
-        ;; Multiple points - check for local maxima including boundaries
-        (reverse
-         (loop [i 0
-                peaks '()
-                last-peak-idx -1000] ; Initialize with impossible index
+    (if (= n 1)
+      ;; Single point - treat as peak if meets criteria
+      (if (>= (first intensities) min-height)
+        [0]
+        [])
+      
+      ;; Multiple points - check for local maxima including boundaries
+      (reverse
+       (loop [i 0
+              peaks '()
+              last-peak-idx -1000] ; Initialize with impossible index
 
-           (when (< i n)
-             (let [curr (intensities i)
-                   relevant (and (>= curr min-height)
-                                 (>= (- i last-peak-idx) min-distance)
-                                 ;; Is it a local max?
-                                 (cond
-                                   ;; First point: compare only with next
-                                   (= i 0)
-                                   (and (< i (dec n))
-                                        (> curr (intensities i)))
-                                   
-                                   ;; Last point: compare only with previous  
-                                   (= i (dec n))
-                                   (> curr (intensities (dec i)))
+         (when (< i n)
+           (let [curr (intensities i)
+                 relevant (and (>= curr min-height)
+                               (>= (- i last-peak-idx) min-distance)
+                               ;; Is it a local max?
+                               (cond
+                                 ;; First point: compare only with next
+                                 (= i 0)
+                                 (and (< i (dec n))
+                                      (> curr (intensities i)))
+                                 
+                                 ;; Last point: compare only with previous  
+                                 (= i (dec n))
+                                 (> curr (intensities (dec i)))
 
-                                   ;; Middle points: compare with both neighbors
-                                   :else
-                                   (and (> curr (intensities (dec i)))
-                                        (> curr (intensities (inc i))))))]
+                                 ;; Middle points: compare with both neighbors
+                                 :else
+                                 (and (> curr (intensities (dec i)))
+                                      (> curr (intensities (inc i))))))]
 
-               (if relevant
-                 (recur (inc i)
-                        (cons i peaks)
-                        i)
-                 (recur (inc i)
-                        peaks
-                        last-peak-idx))))))))))
+             (if relevant
+               (recur (inc i)
+                      (cons i peaks)
+                      i)
+               (recur (inc i)
+                      peaks
+                      last-peak-idx)))))))))
 
 (defn preprocess-spectrum-data
   "Apply complete preprocessing pipeline to spectrum data.

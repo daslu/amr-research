@@ -1,8 +1,7 @@
 (ns maldi.data.ingestion
   (:require [tablecloth.api :as tc]
             [babashka.fs :as fs]
-            [clojure.string :as str]
-            [maldi.errors :as errors]))
+            [clojure.string :as str]))
 
 (defn base-dir-from-env []
   (System/getenv "DRIAMS_BASE_DIR"))
@@ -59,12 +58,9 @@
 (defn load-raw-spectrum
   "Load raw spectrum data from file"
   [path]
-  (errors/with-error-handling
-    errors/data-error
-    {:path path :operation :load-raw}
-    (-> path
-        (tc/dataset {:separator " "})
-        (tc/rename-columns [:mass :intensity]))))
+  (-> path
+      (tc/dataset {:separator " "})
+      (tc/rename-columns [:mass :intensity])))
 
 (comment
   (-> (raw-files-dataset {})

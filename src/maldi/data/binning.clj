@@ -4,7 +4,6 @@
             [tech.v3.datatype :as dtype]
             [tech.v3.dataset.reductions :as ds-reduce]
             [ham-fisted.api :as hamf]
-            [maldi.errors :as errors]
             [clojure.tools.logging :as log]))
 
 (defn create-bin-column
@@ -76,10 +75,8 @@
   "Bin a preprocessed spectrum into fixed-width bins"
   [spectrum params]
   (let [n-bins (calculate-n-bins params)]
-    (errors/with-error-handling errors/pipeline-error {:stage :binning
-                                                       :params params}
-      (-> spectrum
-          (create-bin-column params)
-          aggregate-by-bins
-          (bins->array n-bins)))))
+    (-> spectrum
+        (create-bin-column params)
+        aggregate-by-bins
+        (bins->array n-bins))))
 
