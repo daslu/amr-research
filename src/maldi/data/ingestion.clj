@@ -109,3 +109,24 @@
 
 (comment
   (load-raw-spectrum (example-path)))
+
+
+
+(def all-antibiotics
+  (memoize
+   (fn [params]
+     (-> (available-cases params)
+         (tc/select-columns [:site :year])
+         (tc/rows :as-maps)
+         distinct
+         (->> (mapcat (fn [acase]
+                        (-> acase
+                            load-metadata
+                            (tc/drop-columns [:code :species :laboratory_species])
+                            keys)))
+              distinct)))))
+
+
+(comment
+  (all-antibiotics {}))
+
