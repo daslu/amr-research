@@ -11,7 +11,8 @@
             [tech.v3.dataset.modelling :as ds-mod]
             [maldi.data.bacteria :as bacteria]
             [scicloj.ml.xgboost]
-            [maldi.cache :as cache])
+            [maldi.cache :as cache]
+            [clojure.tools.logging :as log])
   (:import (org.tribuo.classification.evaluation LabelEvaluationUtil)))
 
 (defn prepare-raw-data
@@ -99,10 +100,11 @@
       time))
 
 (defn split [ml-data {:keys [seed]}]
-  (-> ml-data
-      cache/maybe-deref
-      (tc/split->seq :holdout {:seed seed})
-      first))
+  (let [ds (cache/maybe-deref ml-data)]
+    (when (-> ds tc/row-count (>= 100))
+      (-> ds
+          (tc/split->seq :holdout {:seed seed})
+          first))))
 
 (comment
   (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
@@ -117,10 +119,10 @@
       time))
 
 (defn train [split-data hyper]
-  (-> split-data
-      cache/maybe-deref
-      :train
-      (ml/train hyper)))
+  (some-> split-data
+          cache/maybe-deref
+          :train
+          (ml/train hyper)))
 
 (comment
   (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
@@ -140,67 +142,92 @@
 
 (defn predict
   [split-data model]
-  (ml/predict
-   (-> split-data
-       cache/maybe-deref
-       :test)
-   (-> model
-       cache/maybe-deref)))
+  (some-> split-data
+          cache/maybe-deref
+          :test
+          (ml/predict (cache/maybe-deref model))))
 
 
 (defn measure
   [split-data predictions]
-  (-> predictions
-      cache/maybe-deref
-      (tc/add-column :ri (-> split-data
-                             cache/maybe-deref
-                             :test
-                             :ri))))
+  (some-> predictions
+          cache/maybe-deref
+          (tc/add-column :ri (-> split-data
+                                 cache/maybe-deref
+                                 :test
+                                 :ri))))
 
 
-(defn eval-case [{:as case
-                  :keys [site year antibiotic species]}]
-  (let [ml-data (-> ((cache/cached-fn #'prepare-raw-data) case)
-                    ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
-                                                          :binning-params {:range [2000 20000]
-                                                                           :step 3}}))]
-    (when @ml-data
-      (let [split-data (-> ml-data
-                           ((cache/cached-fn #'split) {:seed 1}))
-            model (cache/cached #'train split-data {:model-type :xgboost/classification
-                                                    :round 50
-                                                    :num-class 2})
-            predictions @(cache/cached #'predict split-data model)
-            m (measure split-data
-                       predictions)]
-        #_(-> m
-              (plotly/layer-histogram {:=x 1
-                                       :=color :ri
-                                       :=mark-opacity 0.5}))
-        (merge case
-               {:n (tc/row-count m)
-                :PRAUC (LabelEvaluationUtil/averagedPrecision
-                        (boolean-array (m :ri))
-                        (double-array (m 1)))
-                :ROCAUC (LabelEvaluationUtil/binaryAUCROC
-                         (boolean-array (m :ri))
-                         (double-array (m 1)))})))))
+(def eval-scenario
+  (memoize
+   (fn [{:as scenario
+         :keys [binning-step
+                xgboost-rounds]}]
+     (let [ml-data (-> ((cache/cached-fn #'prepare-raw-data) (:case scenario))
+                       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
+                                                             :binning-params {:range [2000 20000]
+                                                                              :step binning-step}}))]
+       (when @ml-data
+         (log/info [:learning scenario])
+         (let [split-data (-> ml-data
+                              ((cache/cached-fn #'split) {:seed 1}))
+               model (cache/cached #'train split-data {:model-type :xgboost/classification
+                                                       :round xgboost-rounds
+                                                       :num-class 2})
+               predictions @(cache/cached #'predict split-data model)
+               m (measure split-data
+                          predictions)]
+           #_(-> m
+                 (plotly/layer-histogram {:=x 1
+                                          :=color :ri
+                                          :=mark-opacity 0.5}))
+           (when m
+             (merge (:case scenario)
+                    (dissoc scenario :case)
+                    {:n (tc/row-count m)
+                     :PRAUC (LabelEvaluationUtil/averagedPrecision
+                             (boolean-array (m :ri))
+                             (double-array (m 1)))
+                     :ROCAUC (LabelEvaluationUtil/binaryAUCROC
+                              (boolean-array (m :ri))
+                              (double-array (m 1)))}))))))))
 
 
 (comment
-  (-> (for [site [:A ;; :B :C :D
-                  ]
-            year [;; 2015 2016 2017
-                  2018]
+  (-> (for [xgboost-rounds [50 #_100]
+            binning-step [3 #_6]
+            site [:A :B :C :D]
+            year [2015 2016 2017 2018]
             antibiotic (ingestion/all-antibiotics)
-            species [bacteria/E-coli] #_(bacteria/important-bacteria)]
-        (let [acase {:site site
-                     :year year
-                     :antibiotic antibiotic
-                     :species species}]
-          (prn [:case acase])
-          (eval-case acase)))
+            species bacteria/important-bacteria]
+        (let [scenario {:case {:site site
+                               :year year
+                               :antibiotic antibiotic
+                               :species species}
+                        :binning-step binning-step
+                        :xgboost-rounds xgboost-rounds}]
+          (log/info [:scenario scenario])
+          (eval-scenario scenario)))
       (->> (remove nil?))
       tc/dataset
-      time))
+      ;; #_time
+      ;; :ROCAUC
+      ;; (->> (map nil?))
+      ;; frequencies
+      )
+  
 
+
+  (eval-scenario
+   {:case {:site :C
+           :year 2018
+           :antibiotic :Ceftolozane-Tazobactam
+           :species "Pseudomonas aeruginosa"}
+    :binning-step 3
+    :xgboost-rounds 50})
+
+
+
+
+
+  )
