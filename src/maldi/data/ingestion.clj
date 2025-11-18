@@ -107,22 +107,45 @@
   (load-raw-spectrum (example-path)))
 
 
-
-(def all-antibiotics
+(def all-site-years
   (memoize
    (fn [params]
      (-> (available-cases params)
          (tc/select-columns [:site :year])
          (tc/rows :as-maps)
          distinct
-         (->> (mapcat (fn [acase]
-                        (-> acase
-                            load-metadata
-                            (tc/drop-columns [:code :species :laboratory_species])
-                            keys)))
-              distinct)))))
+         sort))))
+
+
+(def all-antibiotics
+  (memoize
+   (fn [params]
+     (->> (all-site-years params)
+          (mapcat (fn [acase]
+                    (-> acase
+                        load-metadata
+                        (tc/drop-columns [:code :species :laboratory_species])
+                        keys)))
+          distinct
+          sort))))
 
 
 (comment
   (all-antibiotics {}))
 
+
+
+(def all-bacteria
+  (memoize
+   (fn [params]
+     (->> (all-site-years params)
+          (mapcat (fn [acase]
+                    (-> acase
+                        load-metadata
+                        :species)))
+          distinct
+          sort))))
+
+
+(comment
+  (all-bacteria {}))
