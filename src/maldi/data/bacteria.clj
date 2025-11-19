@@ -9,6 +9,5 @@
 (def important-bacteria
   [E-coli
    S-aureus
-   S-epidermidis
    P-aeruginosai
    K-pneumoniae])
