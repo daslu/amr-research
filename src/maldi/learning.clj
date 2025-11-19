@@ -151,20 +151,19 @@
 
 (defn measure
   [split-data predictions]
-  (when-let [to-measure (some-> predictions
-                                cache/maybe-deref
-                                (tc/add-column :ri (-> split-data
-                                                       cache/maybe-deref
-                                                       :test
-                                                       :ri)))]
-    {:n (tc/row-count to-measure)
-     :pri (-> to-measure :ri tcc/mean)
-     :PRAUC (LabelEvaluationUtil/averagedPrecision
-             (boolean-array (to-measure :ri))
-             (double-array (to-measure 1)))
-     :ROCAUC (LabelEvaluationUtil/binaryAUCROC
-              (boolean-array (to-measure :ri))
-              (double-array (to-measure 1)))}))
+  (let [{:keys [train test]} (cache/maybe-deref split-data)]
+    (when-let [to-measure (some-> predictions
+                                  cache/maybe-deref
+                                  (tc/add-column :ri (:ri test)))]
+      {:n-train (tc/row-count train)
+       :n-test (tc/row-count test)
+       :pri (-> to-measure :ri tcc/mean)
+       :PRAUC (LabelEvaluationUtil/averagedPrecision
+               (boolean-array (to-measure :ri))
+               (double-array (to-measure 1)))
+       :ROCAUC (LabelEvaluationUtil/binaryAUCROC
+                (boolean-array (to-measure :ri))
+                (double-array (to-measure 1)))})))
 
 
 (def eval-scenario
@@ -192,12 +191,11 @@
 
 (comment
   (-> (for [xgboost-rounds [50 #_100]
-            binning-step [3 #_6]
-            site [:A ;; :B :C :D
-                  ]
+            binning-step [3 6]
+            site [:A :B :C :D]
             year [2015 2016 2017 2018]
             antibiotic (ingestion/all-antibiotics)
-            species (take 1 bacteria/important-bacteria)]
+            species bacteria/important-bacteria]
         (let [scenario {:case {:site site
                                :year year
                                :antibiotic antibiotic
@@ -207,7 +205,8 @@
           (log/info [:scenario scenario])
           (eval-scenario scenario)))
       (->> (remove nil?))
-      tc/dataset)
+      tc/dataset
+      (tc/order-by [:n]))
   
 
 
