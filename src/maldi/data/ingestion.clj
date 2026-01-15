@@ -116,7 +116,10 @@
           (mapcat (fn [acase]
                     (-> acase
                         load-metadata
-                        (tc/drop-columns [:code :species :laboratory_species])
+                        (tc/drop-columns [:code :species :laboratory_species
+                                          :$error :$value
+                                          :column-0 :combined_code
+                                          (keyword "Unnamed: 0")])
                         keys)))
           distinct
           sort))))
