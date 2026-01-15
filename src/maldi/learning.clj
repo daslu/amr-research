@@ -42,7 +42,7 @@
   (-> {:site :A
        :year 2018
        :species bacteria/E-coli
-       :antibiotic :Ciprofloxacin}
+       :antibiotic :Cefepime}
       ((cache/cached-fn #'prepare-raw-data))
       deref
       time))
@@ -95,7 +95,7 @@
   (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
                                              :year 2018
                                              :species bacteria/E-coli
-                                             :antibiotic :Ciprofloxacin})
+                                             :antibiotic :Cefepime})
       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
                                             :binning-params {:range [2000 20000]
                                                              :step 3}})
@@ -113,7 +113,7 @@
   (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
                                              :year 2018
                                              :species bacteria/E-coli
-                                             :antibiotic :Ciprofloxacin})
+                                             :antibiotic :Cefepime})
       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
                                             :binning-params {:range [2000 20000]
                                                              :step 3}})
@@ -131,7 +131,7 @@
   (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
                                              :year 2018
                                              :species bacteria/E-coli
-                                             :antibiotic :Ciprofloxacin})
+                                             :antibiotic :Cefepime})
       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
                                             :binning-params {:range [2000 20000]
                                                              :step 3}})
@@ -167,190 +167,3 @@
                 (boolean-array (to-measure :ri))
                 (double-array (to-measure 1)))})))
 
-
-(def eval-scenario
-  (memoize
-   (fn [{:as scenario
-         :keys [binning-step
-                xgboost-rounds]}]
-     (let [ml-data (-> ((cache/cached-fn #'prepare-raw-data) (:case scenario))
-                       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
-                                                             :binning-params {:range [2000 20000]
-                                                                              :step binning-step}}))]
-       (when @ml-data
-         (log/info [:learning scenario])
-         (let [split-data (-> ml-data
-                              ((cache/cached-fn #'split) {:seed 1})
-                              cache/maybe-deref)
-               {:keys [train test]} split-data
-               model (cache/cached #'train split-data {:model-type :xgboost/classification
-                                                       :round xgboost-rounds
-                                                       :num-class 2})
-               predictions @(cache/cached #'predict split-data model)
-               to-measure (some-> predictions
-                                  cache/maybe-deref
-                                  (tc/add-column :ri (:ri test)))]
-           (merge (:case scenario)
-                  (dissoc scenario :case)
-                  (measure split-data
-                           predictions)
-                  {:to-measure to-measure})))))))
-
-
-(def summary
-  (delay
-    (-> (for [xgboost-rounds [50 #_100]
-              binning-step [3 6]
-              site [:A ;; :B :C :D
-                    ]
-              year [;; 2015 2016 2017
-                    2018]
-              antibiotic (ingestion/all-antibiotics)
-              species [bacteria/E-coli] ;; bacteria/important-bacteria
-              ]
-          (let [scenario {:case {:site site
-                                 :year year
-                                 :antibiotic antibiotic
-                                 :species species}
-                          :binning-step binning-step
-                          :xgboost-rounds xgboost-rounds}]
-            (log/info [:scenario scenario])
-            (eval-scenario scenario)
-            (dissoc :predictoins)))
-        (->> (remove nil?))
-        tc/dataset
-        (tc/order-by [:n-test]))))
-
-
-
-(comment
-  (-> @summary
-      (tc/select-rows #(:n-test %))
-      (plotly/layer-histogram {:=x :n-test}))
-  
-  (-> @summary
-      (tc/select-rows #(and (some-> % :n-test (> 400))
-                            (some-> % :species (= bacteria/E-coli))
-                            (some-> % :pri (< 0.9))))
-      (ds-print/print-range :all))
-
-
-
-  
-  (-> {:case {:species bacteria/E-coli
-              :antibiotic :Ceftazidime ;;:Fosfomycin-Trometamol
-              :year 2018
-              :site :A}
-       :binning-step 3
-       :xgboost-rounds 50}
-      eval-scenario
-      :to-measure
-      ((fn [tm]
-         [(kind/md (format "probability of R/I: %02f" (-> tm :ri tcc/mean)))
-          (kind/md "## ROC curve")
-          #_(let [curve (LabelEvaluationUtil/generatePRCurve
-                         (boolean-array (tm :ri))
-                         (double-array (tm 1)))]
-              (-> {:precision (.precision curve)
-                   :recall (.recall curve)}
-                  tc/dataset
-                  (ds-print/print-range :all)
-                  (tc/order-by [:precision])
-                  (plotly/layer-line {:=x :precision
-                                      :=y :recall})))
-          (let [curve (LabelEvaluationUtil/generateROCCurve
-                       (boolean-array (tm :ri))
-                       (double-array (tm 1)))]
-            (-> {:fpr (.fpr curve)
-                 :tpr (.tpr curve)}
-                tc/dataset
-                (ds-print/print-range :all)
-                (tc/order-by [:precision])
-                (plotly/layer-line {:=x :fpr
-                                    :=y :tpr})))
-          (kind/md "## calibration curve")
-          (-> tm
-              (tc/order-by 1)
-              (tc/add-column :i (range))
-              (tc/map-columns :g :i #(quot % 30))
-              (tc/group-by [:g])
-              (tc/aggregate {:signal #(-> 1
-                                          %
-                                          ((juxt tcc/reduce-min
-                                                 tcc/reduce-max))
-                                          tcc/mean)
-                             :actual #(-> :ri
-                                          %
-                                          tcc/mean)
-                             :n #(tc/row-count %)})
-              (plotly/base {:=x :signal
-                            :=y :actual})
-              plotly/layer-line
-              plotly/layer-point)]))
-      kind/fragment)
-  
-  
-  (ingestion/all-antibiotics)
-
-
-
-  (-> {:case {:species bacteria/S-aureus
-              :antibiotic :Oxacillin
-              :year 2018
-              :site :A}
-       :binning-step 3
-       :xgboost-rounds 50}
-      eval-scenario
-      :to-measure
-      ((fn [tm]
-         [(kind/md (format "probability of R/I: %02f" (-> tm :ri tcc/mean)))
-          (kind/md "## ROC curve")
-          #_(let [curve (LabelEvaluationUtil/generatePRCurve
-                         (boolean-array (tm :ri))
-                         (double-array (tm 1)))]
-              (-> {:precision (.precision curve)
-                   :recall (.recall curve)}
-                  tc/dataset
-                  (ds-print/print-range :all)
-                  (tc/order-by [:precision])
-                  (plotly/layer-line {:=x :precision
-                                      :=y :recall})))
-          (let [curve (LabelEvaluationUtil/generateROCCurve
-                       (boolean-array (tm :ri))
-                       (double-array (tm 1)))]
-            (-> {:fpr (.fpr curve)
-                 :tpr (.tpr curve)}
-                tc/dataset
-                (ds-print/print-range :all)
-                (tc/order-by [:precision])
-                (plotly/layer-line {:=x :fpr
-                                    :=y :tpr})))
-          (kind/md "## calibration curve")
-          (-> tm
-              (tc/order-by 1)
-              (tc/add-column :i (range))
-              (tc/map-columns :g :i #(quot % 30))
-              (tc/group-by [:g])
-              (tc/aggregate {:signal #(-> 1
-                                          %
-                                          ((juxt tcc/reduce-min
-                                                 tcc/reduce-max))
-                                          tcc/mean)
-                             :actual #(-> :ri
-                                          %
-                                          tcc/mean)
-                             :n #(tc/row-count %)})
-              (plotly/base {:=x :signal
-                            :=y :actual})
-              plotly/layer-line
-              plotly/layer-point)])))
-
-  
-  
-
-
-
-
-
-
-  )
