@@ -145,10 +145,29 @@
 
 (defn predict
   [split-data model]
-  (some-> split-data
-          cache/maybe-deref
-          :test
-          (ml/predict (cache/maybe-deref model))))
+  (when-let [m (cache/maybe-deref model)]
+    (some-> split-data
+            cache/maybe-deref
+            :test
+            (ml/predict m))))
+
+(comment
+  (let [split-data (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
+                                                              :year 2018
+                                                              :species bacteria/E-coli
+                                                              :antibiotic :Cefepime})
+                       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
+                                                             :binning-params {:range [2000 20000]
+                                                                              :step 3}})
+                       ((cache/cached-fn #'split) {:seed 1}))
+        model (-> split-data
+                  ((cache/cached-fn #'train) {:model-type :xgboost/classification
+                                              :round 10
+                                              :num-class 2}))]
+    (->> model
+         ((cache/cached-fn #'predict) split-data)
+         deref
+         time)))
 
 
 (defn measure
@@ -166,4 +185,35 @@
        :ROCAUC (LabelEvaluationUtil/binaryAUCROC
                 (boolean-array (to-measure :ri))
                 (double-array (to-measure 1)))})))
+
+
+(comment
+  (let [split-data (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
+                                                              :year 2018
+                                                              :species bacteria/E-coli
+                                                              :antibiotic :Cefepime})
+                       ((cache/cached-fn #'prepare-ml-data) {:preprocessing-params {}
+                                                             :binning-params {:range [2000 20000]
+                                                                              :step 3}})
+                       ((cache/cached-fn #'split) {:seed 1}))
+        model (-> split-data
+                  ((cache/cached-fn #'train) {:model-type :xgboost/classification
+                                              :round 10
+                                              :num-class 2}))]
+    (->> model
+         ((cache/cached-fn #'predict) split-data)
+         ((cache/cached-fn #'measure) split-data)
+         deref
+         time)))
+
+
+
+
+
+
+
+
+
+
+
 
