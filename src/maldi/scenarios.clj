@@ -71,35 +71,19 @@
 
 
 
-(-> @summary
-    (tc/select-columns [:species :antibiotic
-                        :site :year
-                        :pri
-                        :n-train :n-test
-                        :PRAUC :ROCAUC])
-    (tc/rename-columns {:n-train "train cases"
-                        :n-test "test cases"
-                        :pri "probability of R/I"})
-    (tc/order-by [:species :antibiotic :site :year])
-    (tc/write-csv! "scenarios-draft-20260116.csv")
-    time)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(delay
+  (-> @summary
+      (tc/select-columns [:species :antibiotic
+                          :site :year
+                          :pri
+                          :n-train :n-test
+                          :PRAUC :ROCAUC])
+      (tc/rename-columns {:n-train "train cases"
+                          :n-test "test cases"
+                          :pri "probability of R/I"})
+      (tc/order-by [:species :antibiotic :site :year])
+      (tc/write-csv! "scenarios-draft-20260116.csv")
+      time))
 
 
 
@@ -165,165 +149,3 @@
 
 
 
-(comment
-  
-  
-  (-> @summary
-      (tc/select-rows #(and (some-> % :n-test (> 400))
-                            (some-> % :species (= bacteria/E-coli))
-                            (some-> % :pri (< 0.9))))
-      (ds-print/print-range :all))
-
-
-
-  
-  (-> {:case {:species bacteria/E-coli
-              :antibiotic :Ceftazidime ;;:Fosfomycin-Trometamol
-              :year 2018
-              :site :A}
-       :binning-step 3
-       :xgboost-rounds 50}
-      eval-scenario
-      :to-measure
-      ((fn [tm]
-         [(kind/md (format "probability of R/I: %02f" (-> tm :ri tcc/mean)))
-          (kind/md "## ROC curve")
-          #_(let [curve (LabelEvaluationUtil/generatePRCurve
-                         (boolean-array (tm :ri))
-                         (double-array (tm 1)))]
-              (-> {:precision (.precision curve)
-                   :recall (.recall curve)}
-                  tc/dataset
-                  (ds-print/print-range :all)
-                  (tc/order-by [:precision])
-                  (plotly/layer-line {:=x :precision
-                                      :=y :recall})))
-          (let [curve (LabelEvaluationUtil/generateROCCurve
-                       (boolean-array (tm :ri))
-                       (double-array (tm 1)))]
-            (-> {:fpr (.fpr curve)
-                 :tpr (.tpr curve)}
-                tc/dataset
-                (ds-print/print-range :all)
-                (tc/order-by [:precision])
-                (plotly/layer-line {:=x :fpr
-                                    :=y :tpr})))
-          (kind/md "## calibration curve")
-          (-> tm
-              (tc/order-by 1)
-              (tc/add-column :i (range))
-              (tc/map-columns :g :i #(quot % 30))
-              (tc/group-by [:g])
-              (tc/aggregate {:signal #(-> 1
-                                          %
-                                          ((juxt tcc/reduce-min
-                                                 tcc/reduce-max))
-                                          tcc/mean)
-                             :resistance-probability #(-> :ri
-                                                          %
-                                                          tcc/mean)
-                             :n #(tc/row-count %)})
-              (plotly/base {:=x :signal
-                            :=y :resistance-probability})
-              plotly/layer-line
-              plotly/layer-point)]))
-      kind/fragment)
-
-  
-  (ingestion/all-antibiotics)
-
-
-
-  (-> {:case {:species bacteria/S-aureus
-              :antibiotic :Oxacillin
-              :year 2018
-              :site :A}
-       :binning-step 3
-       :xgboost-rounds 50}
-      eval-scenario
-      vis)
-  ,)
-
-
-
-
-  (def eval-scenario-2
-    (memoize
-     (fn [{:as scenario
-           :keys [train-case
-                  test-case
-                  binning-step
-                  xgboost-rounds]}]
-       (let [prep (fn [acase]
-                    (-> acase
-                        ((cache/cached-fn #'learning/prepare-raw-data))
-                        ((cache/cached-fn #'learning/prepare-ml-data) {:preprocessing-params {}
-                                                                       :binning-params {:range [2000 20000]
-                                                                                        :step binning-step}})
-                        ((cache/cached-fn #'learning/split) {:seed 1})
-                        deref))
-             train-data (-> train-case prep :train)
-             test-data (-> test-case prep :test)]
-         (when (and train-data test-data)
-           (log/info [:learning scenario])
-           (let [split-data {:train train-data
-                             :test test-data}
-                 {:keys [test train]} split-data
-                 model (cache/cached #'learning/train split-data {:model-type :xgboost/classification
-                                                                  :round xgboost-rounds
-                                                                  :num-class 2})
-                 predictions @(cache/cached #'learning/predict split-data model)
-                 to-measure (some-> predictions
-                                    cache/maybe-deref
-                                    (tc/add-column :ri (:ri test)))]
-             (merge (:case scenario)
-                    (dissoc scenario :case)
-                    (measure split-data
-                             predictions)
-                    {:to-measure to-measure})))))))
-
-  (comment
-    (-> {:train-case {:species bacteria/S-aureus
-                      :antibiotic :Oxacillin
-                      :year 2018
-                      :site :A}
-         :test-case {:species bacteria/S-aureus
-                     :antibiotic :Oxacillin
-                     :year 2018
-                     :site :A}
-         :binning-step 3
-         :xgboost-rounds 50}
-        eval-scenario-2
-        vis)
-    
-
-    (kind/fragment
-     (for [test-site [:A :C]]
-       (-> {:train-case {:species bacteria/E-coli
-                         :antibiotic :Cefepime
-                         :year 2018
-                         :site :A}
-            :test-case {:species bacteria/E-coli
-                        :antibiotic :Cefepime
-                        :year 2018
-                        :site test-site}
-            :binning-step 3
-            :xgboost-rounds 50}
-           eval-scenario-2
-           vis)))
-    
-
-    (kind/fragment
-     (for [train-year [2017 2018]]
-       (-> {:train-case {:species bacteria/E-coli
-                         :antibiotic :Ceftriaxone
-                         :year train-year
-                         :site :A}
-            :test-case {:species bacteria/E-coli
-                        :antibiotic :Ceftriaxone
-                        :year 2018
-                        :site :A}
-            :binning-step 3
-            :xgboost-rounds 50}
-           eval-scenario-2
-           vis))))
