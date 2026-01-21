@@ -459,3 +459,117 @@ pipeline-match?
 
 
 all-test-results
+
+
+
+;; ## 10. Real Data Validation (fiedler2009subset)
+
+;; Testing full preprocessing pipeline on real MALDI-TOF data.
+;; This validates our implementations work on actual experimental data,
+;; not just synthetic test cases.
+
+;; Load real MALDI-TOF dataset
+(r "data('fiedler2009subset', package='MALDIquant')")
+
+;; Use first spectrum from the dataset
+(def real-masses (r->clj (r "mass(fiedler2009subset[[1]])")))
+(def real-intensities (r->clj (r "intensity(fiedler2009subset[[1]])")))
+
+(kind/md "**Dataset characteristics:**")
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Data Points" (count real-masses)]
+                ["Mass Range" (str (apply min real-masses) " - " (apply max real-masses))]
+                ["Intensity Range" (str (apply min real-intensities) " - " (apply max real-intensities))]
+                ["Data Source" "fiedler2009subset (real MALDI-TOF)"]]})
+
+;; ### R Implementation (MALDIquant)
+(def r-real-result
+  (r->clj (r "intensity(calibrateIntensity(
+                removeBaseline(
+                  smoothIntensity(
+                    transformIntensity(fiedler2009subset[[1]], method='sqrt'),
+                    method='SavitzkyGolay', 
+                    halfWindowSize=5),
+                  method='SNIP', 
+                  iterations=25),
+                method='TIC'))")))
+
+;; ### Clojure Implementation
+(def clj-real-result
+  (let [spectrum {:mass real-masses :intensity real-intensities}
+        processed (signal/preprocess-spectrum-data 
+                   spectrum
+                   {:should-sqrt-transform true
+                    :smooth-window 11
+                    :smooth-polynomial 2
+                    :baseline-iterations 25
+                    :should-tic-normalize true
+                    :tic-target 1.0})]
+    (vec (:intensity processed))))
+
+;; ### Comparison
+(kind/md "**Comparing first 20 points of preprocessed real data:**")
+
+(kind/table
+ {:column-names ["Index" "Mass" "R Preprocessed" "Clojure Preprocessed" "Difference"]
+  :row-vectors (take 20
+                     (map-indexed
+                      (fn [idx [mass r-val clj-val]]
+                        [idx mass r-val clj-val (- clj-val r-val)])
+                      (map vector real-masses r-real-result clj-real-result)))})
+
+;; Test match across entire real dataset
+(def real-match? (every? #(< (Math/abs %) 1e-5)
+                         (map - clj-real-result r-real-result)))
+
+(def real-max-diff (apply max (map #(Math/abs %) (map - clj-real-result r-real-result))))
+(def real-mean-diff (/ (apply + (map #(Math/abs %) (map - clj-real-result r-real-result)))
+                       (count real-masses)))
+
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Match?" real-match?]
+                ["Points Compared" (count real-masses)]
+                ["Max Difference" real-max-diff]
+                ["Mean Difference" real-mean-diff]]})
+
+real-match?
+
+(kind/test-last [true?])
+
+
+;; ## Summary of All Test Results (Updated)
+
+(def all-test-results-final
+  {:section-6-savgol {:match sg-match?
+                      :max-diff (apply max (map #(Math/abs %) (map - clj-sg-smoothed r-sg-smoothed)))}
+   :section-7-snip {:match snip-match?
+                    :max-diff (apply max (map #(Math/abs %) (map - clj-snip-corrected r-snip-corrected)))}
+   :section-8-tic {:match tic-match?
+                   :max-diff (apply max (map #(Math/abs %) (map - clj-tic-normalized r-tic-normalized)))}
+   :section-9-pipeline {:match pipeline-match?
+                        :max-diff pipeline-max-diff
+                        :mean-diff pipeline-mean-diff
+                        :num-points (count pipeline-masses)}
+   :section-10-real-data {:match real-match?
+                          :max-diff real-max-diff
+                          :mean-diff real-mean-diff
+                          :num-points (count real-masses)}})
+
+(kind/table
+ {:column-names ["Section" "Match?" "Max Difference" "Notes"]
+  :row-vectors [["6. Savitzky-Golay" (:match (:section-6-savgol all-test-results-final)) 
+                 (:max-diff (:section-6-savgol all-test-results-final)) "Negative clamping"]
+                ["7. SNIP Baseline" (:match (:section-7-snip all-test-results-final))
+                 (:max-diff (:section-7-snip all-test-results-final)) "Decreasing iterations"]
+                ["8. TIC Normalize" (:match (:section-8-tic all-test-results-final))
+                 (:max-diff (:section-8-tic all-test-results-final)) "Trapezoid area"]
+                ["9. Full Pipeline" (:match (:section-9-pipeline all-test-results-final))
+                 (:max-diff (:section-9-pipeline all-test-results-final)) 
+                 (str (:num-points (:section-9-pipeline all-test-results-final)) " points")]
+                ["10. Real Data" (:match (:section-10-real-data all-test-results-final))
+                 (:max-diff (:section-10-real-data all-test-results-final))
+                 (str (:num-points (:section-10-real-data all-test-results-final)) " real points")]]})
+
+all-test-results-final
