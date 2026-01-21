@@ -10,6 +10,18 @@
             [clojisr.v1.r :as r :refer [r r->clj clj->r]]
             [scicloj.kindly.v4.kind :as kind]))
 
+;; Source - https://stackoverflow.com/a
+;; Posted by henryw374
+;; Retrieved 2026-01-21, License - CC BY-SA 3.0
+^:kindly/hide-code
+(import ch.qos.logback.classic.Logger
+        ch.qos.logback.classic.Level)
+^:kindly/hide-code
+(.setLevel 
+ (org.slf4j.LoggerFactory/getLogger (Logger/ROOT_LOGGER_NAME)) Level/INFO)
+
+
+
 ;; # MALDIquant Comparison
 ;;
 ;; This notebook validates our Clojure implementations against the reference
@@ -51,7 +63,7 @@
 
 ;; ### R Implementation
 (def r-mad 
-  (first (r->clj (r "mad(c(0.1, 0.2, 0.5, 1.0, 0.5, 0.2, 0.1, 0.15, 0.3, 0.8, 1.5, 0.7, 0.2))"))))
+  (first (r->clj (r `(mad ~test-intensities)))))
 
 ;; ### Clojure Implementation
 (def clj-mad 
@@ -92,33 +104,27 @@
 (def clj-maxima-indices 
   (filterv #(aget clj-maxima %) (range (count spectrum-data))))
 
-;; ### R: Find Local Maxima
-;; R doesn't expose the local maxima function directly, so we'll compare
-;; via the full detectPeaks pipeline below.
-(r "
-spectrum_intensity <- c(rep(0.05, 10),
-                        0.1, 0.2, 0.5, 1.2, 0.6, 0.2, 0.1,
-                        rep(0.03, 5),
-                        0.08, 0.15, 0.3, 0.8, 2.5, 1.0, 0.4, 0.1,
-                        rep(0.04, 8))
-")
+;; ### R: Create spectrum in R using Clojure data
+(r `(do
+      (<- spectrum_intensity ~spectrum-data)
+      (<- spectrum_mass 
+          (bra (seq 2000 (+ 2000 (* (length spectrum_intensity) 2)) :by 2)
+               (seq 1 (length spectrum_intensity))))))
 
 ;; ## 3. Peak Detection (Full Pipeline)
 ;;
 ;; The complete pipeline: local maxima + noise estimation + SNR filtering.
 
 ;; ### R Implementation (MALDIquant)
-(r "
-spectrum_mass <- seq(2000, 2000 + length(spectrum_intensity) * 2, by=2)[1:length(spectrum_intensity)]
-spec <- createMassSpectrum(mass=spectrum_mass, intensity=spectrum_intensity)
-peaks <- detectPeaks(spec, halfWindowSize=3, SNR=2, method='MAD')
-")
+(r `(<- spec (createMassSpectrum :mass spectrum_mass :intensity spectrum_intensity)))
+
+(r `(<- peaks (detectPeaks spec :halfWindowSize 3 :SNR 2 :method "MAD")))
 
 (def r-peak-indices 
-  (mapv dec (r->clj (r "which(spectrum_intensity %in% intensity(peaks))"))))
+  (mapv dec (r->clj (r `(which (%in% spectrum_intensity (intensity peaks)))))))
 
 (def r-peak-intensities 
-  (r->clj (r "intensity(peaks)")))
+  (r->clj (r `(intensity peaks))))
 
 ;; ### Clojure Implementation
 (def clj-peak-indices 
@@ -163,9 +169,11 @@ peaks <- detectPeaks(spec, halfWindowSize=3, SNR=2, method='MAD')
 
 (defn compare-snr-thresholds [snr-values]
   (for [snr snr-values]
-    (let [r-peaks (do
-                    (r (str "peaks_snr" snr " <- detectPeaks(spec, halfWindowSize=3, SNR=" snr ", method='MAD')"))
-                    (count (r->clj (r (str "intensity(peaks_snr" snr ")")))))
+    (let [peak-var (symbol (str "peaks_snr" snr))
+          r-peaks (do
+                    (r `(<- ~peak-var 
+                            (detectPeaks spec :halfWindowSize 3 :SNR ~snr :method "MAD")))
+                    (count (r->clj (r `(intensity ~peak-var)))))
           clj-peaks (count (signal/detect-peaks spectrum-data {:half-window-size 3 :snr snr}))]
       {:snr snr
        :r-peaks r-peaks
