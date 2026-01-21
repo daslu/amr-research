@@ -354,7 +354,7 @@
              :or {should-sqrt-transform true
                   smooth-window 11
                   smooth-polynomial 2
-                  baseline-iterations 25
+                  baseline-iterations 20
                   should-tic-normalize true
                   tic-target 1.0}}]
 
