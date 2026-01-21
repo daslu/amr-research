@@ -63,6 +63,10 @@
   :row-vectors [["R (MALDIquant)" r-mad "-"]
                 ["Clojure" clj-mad (- clj-mad r-mad)]]})
 
+(= r-mad clj-mad)
+
+(kind/test-last [true?])
+
 ;; ## 2. Local Maxima Detection
 ;;
 ;; The sliding window algorithm identifies local maxima.
@@ -130,6 +134,14 @@ peaks <- detectPeaks(spec, halfWindowSize=3, SNR=2, method='MAD')
                 ["Peak Intensities" r-peak-intensities clj-peak-intensities (= r-peak-intensities clj-peak-intensities)]
                 ["Number of Peaks" (count r-peak-indices) (count clj-peak-indices) (= (count r-peak-indices) (count clj-peak-indices))]]})
 
+(= r-peak-indices clj-peak-indices)
+
+(kind/test-last [true?])
+
+(= r-peak-intensities clj-peak-intensities)
+
+(kind/test-last [true?])
+
 ;; ### Visualization: Detected Peaks
 (-> {:index (range (count spectrum-data))
      :intensity spectrum-data
@@ -164,8 +176,7 @@ peaks <- detectPeaks(spec, halfWindowSize=3, SNR=2, method='MAD')
  (-> (compare-snr-thresholds [1 2 3 4])
      tc/dataset))
 
-^:kind/test-last
-(defn test-ns []
-  {:MAD-matches (= r-mad clj-mad)
-   :peak-indices-match (= r-peak-indices clj-peak-indices)
-   :peak-intensities-match (= r-peak-intensities clj-peak-intensities)})
+(->> (compare-snr-thresholds [1 2 3 4])
+     (every? :match?))
+
+(kind/test-last [true?])
