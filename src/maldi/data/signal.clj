@@ -47,7 +47,6 @@
   (let [savgol (Savgol. window-size polynomial-order)]
     (.filter savgol (double-array intensities))))
 
-
 (defn snip-baseline-removal
   "Remove baseline using improved SNIP (Statistics-sensitive Non-linear Iterative Peak-clipping) algorithm.
    
@@ -89,7 +88,7 @@
           (let [;; Linear interpolation between surrounding points
                 interpolated (* 0.5 (+ (aget working (- i window-half))
                                        (aget working (+ i window-half))))
-                
+
                 current-val (aget working i)]
 
             ;; SNIP clipping: keep minimum of current and interpolated
@@ -97,7 +96,6 @@
 
       ;; Return baseline-corrected intensities (original - baseline)
       (tcc/- intensities working))))
-
 
 (defn tic-normalize
   "Normalize intensities using Total Ion Current (TIC).
@@ -112,7 +110,7 @@
    Note: If all intensities are zero, returns zeros (graceful handling)"
   ([intensities {:keys [target-sum]
                  :or {target-sum 1}}]
-   
+
    (let [current-sum (tcc/sum intensities)]
      (if (zero? current-sum)
        (do
@@ -126,7 +124,6 @@
              (log/warn (format "Very small intensity sum detected: %e. Normalization may be unstable." current-sum)))
            (tcc// intensities
                   (tcc/sum intensities)))))))
-
 
 (defn median-filter
   "Apply median filter for noise reduction.
@@ -156,65 +153,164 @@
 
     result))
 
+;; ============================================================================
+;; MALDIquant-compatible Peak Detection Functions
+;; ============================================================================
 
-(defn find-peaks
-  "Find peaks in spectrum based on local maxima with improved boundary handling.
+(defn- find-max-index-in-window
+  "Find the index of maximum value in a window of intensities.
    
    Args:
-   - intensities
-   - min-height: minimum peak height (default: 0.0)
-   - min-distance: minimum distance between peaks in data points (default: 1)
+   - intensities: the intensity buffer
+   - start: window start index (inclusive)
+   - end: window end index (exclusive)
    
-   Returns: a vector of index values for the peaks"
-  [intensities
-   {:keys [min-height min-distance]
-    :or {min-height 0
-         min-distance 1}}]
+   Returns: absolute index of maximum value within [start, end)"
+  [intensities start end]
+  (loop [i (inc start)
+         max-idx start
+         max-val (dtype/get-value intensities start)]
+    (if (>= i end)
+      max-idx
+      (let [val (dtype/get-value intensities i)]
+        (if (> val max-val)
+          (recur (inc i) i val)
+          (recur (inc i) max-idx max-val))))))
 
-  (let [n (dtype/ecount intensities)]
+(defn find-local-maxima-logical
+  "Find local maxima using sliding window approach (MALDIquant algorithm).
+   
+   For each position i, checks if it is the maximum value within the window
+   [i-halfWindowSize, i+halfWindowSize]. Returns a logical vector indicating
+   which positions are local maxima.
+   
+   Args:
+   - intensities: intensity values
+   - half-window-size: half the window size for local maximum detection
+   
+   Returns: boolean array where true indicates a local maximum"
+  [intensities {:keys [half-window-size]
+                :or {half-window-size 20}}]
+  (let [n (dtype/ecount intensities)
+        result (boolean-array n false)]
 
-    (when (< n 1)
-      (throw (ex-info "Cannot find peaks in empty data" {})))
+    (when (pos? n)
+      (doseq [i (range n)]
+        (let [window-start (max 0 (- i half-window-size))
+              window-end (min n (inc (+ i half-window-size)))
+              max-idx (find-max-index-in-window intensities window-start window-end)]
 
-    (if (= n 1)
-      ;; Single point - treat as peak if meets criteria
-      (if (>= (first intensities) min-height)
-        [0]
-        [])
-      
-      ;; Multiple points - check for local maxima including boundaries
-      (reverse
-       (loop [i 0
-              peaks '()
-              last-peak-idx -1000] ; Initialize with impossible index
+          ;; Mark as local maximum if this position is the window's maximum
+          (when (= i max-idx)
+            (aset result i true)))))
 
-         (when (< i n)
-           (let [curr (intensities i)
-                 relevant (and (>= curr min-height)
-                               (>= (- i last-peak-idx) min-distance)
-                               ;; Is it a local max?
-                               (cond
-                                 ;; First point: compare only with next
-                                 (= i 0)
-                                 (and (< i (dec n))
-                                      (> curr (intensities i)))
-                                 
-                                 ;; Last point: compare only with previous  
-                                 (= i (dec n))
-                                 (> curr (intensities (dec i)))
+    result))
 
-                                 ;; Middle points: compare with both neighbors
-                                 :else
-                                 (and (> curr (intensities (dec i)))
-                                      (> curr (intensities (inc i))))))]
+(defn estimate-noise-mad
+  "Estimate noise level using MAD (Median Absolute Deviation) method.
+   
+   This follows MALDIquant's MAD noise estimation:
+   noise[i] = median(|intensities - median(intensities)|) * 1.4826
+   
+   The constant 1.4826 makes MAD consistent with standard deviation
+   for normally distributed data.
+   
+   Args:
+   - intensities: intensity values
+   - half-window-size: half window size for local noise estimation (optional)
+   
+   Returns: scalar noise estimate or vector of local noise estimates"
+  [intensities {:keys [half-window-size]
+                :or {half-window-size nil}}]
 
-             (if relevant
-               (recur (inc i)
-                      (cons i peaks)
-                      i)
-               (recur (inc i)
-                      peaks
-                      last-peak-idx)))))))))
+  (if half-window-size
+    ;; Local noise estimation (moving window)
+    (let [n (dtype/ecount intensities)
+          result (double-array n)]
+      (doseq [i (range n)]
+        (let [window-start (max 0 (- i half-window-size))
+              window-end (min n (inc (+ i half-window-size)))
+              window (dtype/sub-buffer intensities window-start (- window-end window-start))
+              med (tcc/median window)
+              abs-dev (tcc/abs (tcc/- window med))
+              mad (tcc/median abs-dev)]
+          (aset result i (* mad 1.4826))))
+      result)
+
+    ;; Global noise estimation
+    (let [med (tcc/median intensities)
+          abs-dev (tcc/abs (tcc/- intensities med))
+          mad (tcc/median abs-dev)]
+      (* mad 1.4826))))
+
+(defn filter-peaks-by-snr
+  "Filter peak candidates by Signal-to-Noise Ratio threshold.
+   
+   Args:
+   - intensities: intensity values
+   - is-local-maxima: boolean array indicating local maxima positions
+   - noise: noise estimate (scalar or array)
+   - snr-threshold: minimum SNR for a peak to be accepted
+   
+   Returns: vector of indices that are both local maxima and above SNR threshold"
+  [intensities is-local-maxima noise {:keys [snr-threshold]
+                                      :or {snr-threshold 2}}]
+  (let [n (dtype/ecount intensities)
+        noise-scalar? (number? noise)]
+
+    (filterv
+     identity
+     (for [i (range n)
+           :when (aget is-local-maxima i)]
+       (let [intensity (dtype/get-value intensities i)
+             noise-val (if noise-scalar? noise (aget noise i))
+             snr (if (pos? noise-val) (/ intensity noise-val) 0.0)]
+         (when (>= snr snr-threshold)
+           i))))))
+
+(defn detect-peaks
+  "Detect peaks in spectrum using MALDIquant-compatible algorithm.
+   
+   This implements the MALDIquant peak detection pipeline:
+   1. Find local maxima using sliding window
+   2. Estimate noise level using MAD
+   3. Filter peaks by SNR threshold
+   
+   Args:
+   - intensities: intensity values
+   - options: map with keys:
+     - :half-window-size (default 20): window size for local maximum detection
+     - :snr (default 2): Signal-to-Noise Ratio threshold
+     - :noise-method (default :mad-global): :mad-global or :mad-local
+   
+   Returns: vector of peak indices"
+  [intensities {:keys [half-window-size snr noise-method]
+                :or {half-window-size 20
+                     snr 2
+                     noise-method :mad-global}
+                :as options}]
+
+  (when (< (dtype/ecount intensities) 1)
+    (throw (ex-info "Cannot detect peaks in empty data" {})))
+
+  ;; Step 1: Find local maxima
+  (let [is-local-maxima (find-local-maxima-logical intensities
+                                                   {:half-window-size half-window-size})
+
+        ;; Step 2: Estimate noise
+        noise (case noise-method
+                :mad-global (estimate-noise-mad intensities {})
+                :mad-local (estimate-noise-mad intensities
+                                               {:half-window-size half-window-size})
+                (estimate-noise-mad intensities {}))
+
+        ;; Step 3: Filter by SNR
+        peak-indices (filter-peaks-by-snr intensities
+                                          is-local-maxima
+                                          noise
+                                          {:snr-threshold snr})]
+
+    peak-indices))
 
 (defn preprocess-spectrum-data
   "Apply complete preprocessing pipeline to spectrum data.
@@ -243,11 +339,10 @@
   ;;                                                   :options options}
 
   #_(log/info "Starting spectrum preprocessing pipeline")
-  
+
   (cond-> intensities
     should-sqrt-transform (sqrt-transform)
     true (savitzky-golay-smooth {:window-size smooth-window
                                  :polynomial-order smooth-polynomial})
     true (snip-baseline-removal {:iterations baseline-iterations})
     should-tic-normalize (tic-normalize {:target-sum tic-target})))
-
