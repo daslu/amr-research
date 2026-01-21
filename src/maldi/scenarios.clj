@@ -5,7 +5,13 @@
             [maldi.learning :as learning]
             [clojure.tools.logging :as log]
             [maldi.data.bacteria :as bacteria]
-            [maldi.data.ingestion :as ingestion]))
+            [maldi.data.ingestion :as ingestion]
+            [tech.v3.dataset.print :as ds-print]
+            [scicloj.tableplot.v1.plotly :as plotly]
+            [tablecloth.column.api :as tcc])
+  (:import (org.tribuo.classification.evaluation LabelEvaluationUtil)))
+
+
 
 (def eval-scenario
   (memoize
@@ -28,23 +34,25 @@
                predictions @(cache/cached #'learning/predict split-data model)
                to-measure (some-> predictions
                                   cache/maybe-deref
-                                  (tc/add-column :ri (:ri test)))]
-           (merge (:case scenario)
-                  (dissoc scenario :case)
-                  (learning/measure split-data
-                                    predictions)
-                  {:to-measure to-measure})))))))
-
+                                  (tc/add-column :ri (:ri test)))
+               result (merge (:case scenario)
+                             (dissoc scenario :case)
+                             (learning/measure split-data
+                                               predictions)
+                             {:to-measure to-measure})]
+           (log/info [:done scenario])
+           result))))))
 
 (def summary
   (delay
     (-> (for [xgboost-rounds [50]
               binning-step [3]
-              site [:A]
-              year [2018]
+              site [:A :B :C :D]
+              year [2015 2016 2017 2018]
               antibiotic (ingestion/all-antibiotics)
-              species [bacteria/E-coli] ;; bacteria/important-bacteria
-              ]
+              species [bacteria/E-coli
+                       bacteria/S-aureus
+                       bacteria/P-aeruginosai]]
           (let [scenario {:case {:site site
                                  :year year
                                  :antibiotic antibiotic
@@ -52,14 +60,48 @@
                           :binning-step binning-step
                           :xgboost-rounds xgboost-rounds}]
             (log/info [:scenario scenario])
-            (eval-scenario scenario)
-            (dissoc :predictoins)))
+            (some-> scenario
+                    eval-scenario
+                    (dissoc :to-measure))))
         (->> (remove nil?))
         tc/dataset
-        (tc/order-by [:n-test]))))
+        (tc/select-rows #(some-> % :n-test pos?))
+        (tc/order-by [:n-test])
+        (ds-print/print-range :all))))
 
 
-@summary
+
+(-> @summary
+    (tc/select-columns [:species :antibiotic
+                        :site :year
+                        :pri
+                        :n-train :n-test
+                        :PRAUC :ROCAUC])
+    (tc/rename-columns {:n-train "train cases"
+                        :n-test "test cases"
+                        :pri "probability of R/I"})
+    (tc/order-by [:species :antibiotic :site :year])
+    (tc/write-csv! "scenarios-draft-20260116.csv")
+    time)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (defn vis [{:as evaluated-scenario
@@ -120,10 +162,11 @@
 
 
 
+
+
+
 (comment
-  (-> @summary
-      (tc/select-rows #(:n-test %))
-      (plotly/layer-histogram {:=x :n-test}))
+  
   
   (-> @summary
       (tc/select-rows #(and (some-> % :n-test (> 400))
@@ -185,7 +228,7 @@
               plotly/layer-line
               plotly/layer-point)]))
       kind/fragment)
-  
+
   
   (ingestion/all-antibiotics)
 
@@ -204,85 +247,83 @@
 
 
 
-(def eval-scenario-2
-  (memoize
-   (fn [{:as scenario
-         :keys [train-case
-                test-case
-                binning-step
-                xgboost-rounds]}]
-     (let [prep (fn [acase]
-                  (-> acase
-                      ((cache/cached-fn #'learning/prepare-raw-data))
-                      ((cache/cached-fn #'learning/prepare-ml-data) {:preprocessing-params {}
-                                                            :binning-params {:range [2000 20000]
-                                                                             :step binning-step}})
-                      ((cache/cached-fn #'learning/split) {:seed 1})
-                      deref))
-           train-data (-> train-case prep :train)
-           test-data (-> test-case prep :test)]
-       (when (and train-data test-data)
-         (log/info [:learning scenario])
-         (let [split-data {:train train-data
-                           :test test-data}
-               {:keys [test train]} split-data
-               model (cache/cached #'learning/train split-data {:model-type :xgboost/classification
-                                                       :round xgboost-rounds
-                                                       :num-class 2})
-               predictions @(cache/cached #'learning/predict split-data model)
-               to-measure (some-> predictions
-                                  cache/maybe-deref
-                                  (tc/add-column :ri (:ri test)))]
-           (merge (:case scenario)
-                  (dissoc scenario :case)
-                  (measure split-data
-                           predictions)
-                  {:to-measure to-measure})))))))
+  (def eval-scenario-2
+    (memoize
+     (fn [{:as scenario
+           :keys [train-case
+                  test-case
+                  binning-step
+                  xgboost-rounds]}]
+       (let [prep (fn [acase]
+                    (-> acase
+                        ((cache/cached-fn #'learning/prepare-raw-data))
+                        ((cache/cached-fn #'learning/prepare-ml-data) {:preprocessing-params {}
+                                                                       :binning-params {:range [2000 20000]
+                                                                                        :step binning-step}})
+                        ((cache/cached-fn #'learning/split) {:seed 1})
+                        deref))
+             train-data (-> train-case prep :train)
+             test-data (-> test-case prep :test)]
+         (when (and train-data test-data)
+           (log/info [:learning scenario])
+           (let [split-data {:train train-data
+                             :test test-data}
+                 {:keys [test train]} split-data
+                 model (cache/cached #'learning/train split-data {:model-type :xgboost/classification
+                                                                  :round xgboost-rounds
+                                                                  :num-class 2})
+                 predictions @(cache/cached #'learning/predict split-data model)
+                 to-measure (some-> predictions
+                                    cache/maybe-deref
+                                    (tc/add-column :ri (:ri test)))]
+             (merge (:case scenario)
+                    (dissoc scenario :case)
+                    (measure split-data
+                             predictions)
+                    {:to-measure to-measure})))))))
 
-(comment
-  (-> {:train-case {:species bacteria/S-aureus
-                    :antibiotic :Oxacillin
-                    :year 2018
-                    :site :A}
-       :test-case {:species bacteria/S-aureus
-                   :antibiotic :Oxacillin
-                   :year 2018
-                   :site :A}
-       :binning-step 3
-       :xgboost-rounds 50}
-      eval-scenario-2
-      vis)
-  
-
-  (kind/fragment
-   (for [test-site [:A :C]]
-     (-> {:train-case {:species bacteria/E-coli
-                       :antibiotic :Cefepime
-                       :year 2018
-                       :site :A}
-          :test-case {:species bacteria/E-coli
-                      :antibiotic :Cefepime
-                      :year 2018
-                      :site test-site}
-          :binning-step 3
-          :xgboost-rounds 50}
-         eval-scenario-2
-         vis)))
-  
-
-  (kind/fragment
-   (for [train-year [2017 2018]]
-     (-> {:train-case {:species bacteria/E-coli
-                       :antibiotic :Ceftriaxone
-                       :year train-year
-                       :site :A}
-          :test-case {:species bacteria/E-coli
-                      :antibiotic :Ceftriaxone
+  (comment
+    (-> {:train-case {:species bacteria/S-aureus
+                      :antibiotic :Oxacillin
                       :year 2018
                       :site :A}
-          :binning-step 3
-          :xgboost-rounds 50}
-         eval-scenario-2
-         vis))))
+         :test-case {:species bacteria/S-aureus
+                     :antibiotic :Oxacillin
+                     :year 2018
+                     :site :A}
+         :binning-step 3
+         :xgboost-rounds 50}
+        eval-scenario-2
+        vis)
+    
 
+    (kind/fragment
+     (for [test-site [:A :C]]
+       (-> {:train-case {:species bacteria/E-coli
+                         :antibiotic :Cefepime
+                         :year 2018
+                         :site :A}
+            :test-case {:species bacteria/E-coli
+                        :antibiotic :Cefepime
+                        :year 2018
+                        :site test-site}
+            :binning-step 3
+            :xgboost-rounds 50}
+           eval-scenario-2
+           vis)))
+    
 
+    (kind/fragment
+     (for [train-year [2017 2018]]
+       (-> {:train-case {:species bacteria/E-coli
+                         :antibiotic :Ceftriaxone
+                         :year train-year
+                         :site :A}
+            :test-case {:species bacteria/E-coli
+                        :antibiotic :Ceftriaxone
+                        :year 2018
+                        :site :A}
+            :binning-step 3
+            :xgboost-rounds 50}
+           eval-scenario-2
+           vis))))
