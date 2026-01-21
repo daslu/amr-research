@@ -20,7 +20,7 @@
                             :mass
                             (tcc/- min-val)
                             (tcc// step)
-                            tcc/round
+                            tcc/floor
                             (tcc/+ 0.0))))))
 
 (defn aggregate-by-bins
