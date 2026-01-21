@@ -72,13 +72,13 @@
      (->id (->> v
                 .args
                 (mapv (fn [a]
-                        (if (instance? PersistentHashMap a)
-                          (->> a
-                               (sort-by key)
-                               (mapcat (fn [[k v]]
-                                         [k (->id v)]))
-                               (apply array-map))
-                          (->id a))))))))
+                        (cond (nil? a) nil
+                              (instance? PersistentHashMap a) (->> a
+                                                                   (sort-by key)
+                                                                   (mapcat (fn [[k v]]
+                                                                             [k (->id v)]))
+                                                                   (apply array-map))
+                              :else (->id a))))))))
   
   clojure.lang.MapEntry
   (->id [v] (pr-str v))
@@ -90,7 +90,6 @@
   Object
   (->id [this]
     this))
-
 
 (defn cached
   "Create a cached computation"
