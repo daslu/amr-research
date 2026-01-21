@@ -363,12 +363,14 @@
 
         ;; Apply preprocessing pipeline to intensities
         processed-intensities
-        (cond-> intensities
-          should-sqrt-transform (sqrt-transform)
-          true (savitzky-golay-smooth {:window-size smooth-window
-                                       :polynomial-order smooth-polynomial})
-          true (snip-baseline-removal {:iterations baseline-iterations})
-          should-tic-normalize (tic-normalize masses {:target-area tic-target}))]
+        (as-> intensities $
+          (if should-sqrt-transform (sqrt-transform $) $)
+          (savitzky-golay-smooth $ {:window-size smooth-window
+                                    :polynomial-order smooth-polynomial})
+          (snip-baseline-removal $ {:iterations baseline-iterations})
+          (if should-tic-normalize
+            (tic-normalize masses $ {:target-area tic-target})
+            $))]
 
     ;; Return spectrum with processed intensities
     {:mass masses

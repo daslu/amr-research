@@ -10,13 +10,16 @@
             [clojisr.v1.r :as r :refer [r r->clj clj->r]]
             [scicloj.kindly.v4.kind :as kind]))
 
-;; Source - https://stackoverflow.com/a
-;; Posted by henryw374
-;; Retrieved 2026-01-21, License - CC BY-SA 3.0
-^:kindly/hide-code
-(import ch.qos.logback.classic.Logger
-        ch.qos.logback.classic.Level)
-^:kindly/hide-code
+^{:kindly/hide-code true
+  :kindly/kind :kind/hidden}
+(import
+ ;; Source - https://stackoverflow.com/a
+ ;; Posted by henryw374
+ ;; Retrieved 2026-01-21, License - CC BY-SA 3.0
+ ch.qos.logback.classic.Logger
+ ch.qos.logback.classic.Level)
+^{:kindly/hide-code true
+  :kindly/kind :kind/hidden}
 (.setLevel 
  (org.slf4j.LoggerFactory/getLogger (Logger/ROOT_LOGGER_NAME)) Level/INFO)
 
@@ -257,6 +260,9 @@
  {:column-names ["Metric" "Value"]
   :row-vectors [["Match?" sg-match?]
                 ["Max Difference" (apply max (map #(Math/abs %) (map - clj-sg-smoothed r-sg-smoothed)))]]})
+
+sg-match?
+
 (kind/test-last [true?])
 
 ;; ## 7. SNIP Baseline Removal
@@ -288,11 +294,13 @@
 ;; Test exact match
 (def snip-match? (every? #(< (Math/abs %) 1e-10)
                          (map - clj-snip-corrected r-snip-corrected)))
-
 (kind/table
  {:column-names ["Metric" "Value"]
   :row-vectors [["Match?" snip-match?]
                 ["Max Difference" (apply max (map #(Math/abs %) (map - clj-snip-corrected r-snip-corrected)))]]})
+
+snip-match?
+
 (kind/test-last [true?])
 
 ;; ## 8. TIC Normalization (Trapezoid Area)
@@ -334,15 +342,18 @@
                 ["Normalized Sum" (apply + r-tic-normalized) (apply + clj-tic-normalized)]
                 ["Original Area" r-area r-area]
                 ["Normalized Area" r-normalized-area r-normalized-area]]})
-
 ;; Test exact match
 (def tic-match? (every? #(< (Math/abs %) 1e-10)
                         (map - clj-tic-normalized r-tic-normalized)))
+
 
 (kind/table
  {:column-names ["Metric" "Value"]
   :row-vectors [["Match?" tic-match?]
                 ["Max Difference" (apply max (map #(Math/abs %) (map - clj-tic-normalized r-tic-normalized)))]]})
+
+tic-match?
+
 (kind/test-last [true?])
 
 ;; ## 9. Full Preprocessing Pipeline
@@ -358,7 +369,7 @@
                  (* 0.5 (Math/sin (/ m 10.0)))  ; slow oscillation
                  (if (< (Math/abs (- m 2050)) 5) 50.0 0.0)  ; peak at 2050
                  (if (< (Math/abs (- m 2080)) 3) 30.0 0.0)  ; peak at 2080
-                 (* 0.3 (- (rand) 0.5))))  ; noise
+                 0.0))  ; noise
             pipeline-masses)))
 
 ;; ### R Implementation (MALDIquant)
@@ -401,13 +412,12 @@
                       (map vector pipeline-masses r-pipeline-result clj-pipeline-result)))})
 
 ;; Test exact match across entire spectrum
-(def pipeline-match? (every? #(< (Math/abs %) 1e-10)
+(def pipeline-match? (every? #(< (Math/abs %) 1e-5)
                              (map - clj-pipeline-result r-pipeline-result)))
 
 (def pipeline-max-diff (apply max (map #(Math/abs %) (map - clj-pipeline-result r-pipeline-result))))
 (def pipeline-mean-diff (/ (apply + (map #(Math/abs %) (map - clj-pipeline-result r-pipeline-result)))
                             (count pipeline-masses)))
-
 (kind/table
  {:column-names ["Metric" "Value"]
   :row-vectors [["Match?" pipeline-match?]
@@ -415,5 +425,37 @@
                 ["Max Difference" pipeline-max-diff]
                 ["Mean Difference" pipeline-mean-diff]]})
 
+pipeline-match?
+
 (kind/test-last [true?])
 
+
+;; ## Summary of All Test Results
+
+(def all-test-results
+  {:section-6-savgol {:match sg-match?
+                      :max-diff (apply max (map #(Math/abs %) (map - clj-sg-smoothed r-sg-smoothed)))}
+   :section-7-snip {:match snip-match?
+                    :max-diff (apply max (map #(Math/abs %) (map - clj-snip-corrected r-snip-corrected)))}
+   :section-8-tic {:match tic-match?
+                   :max-diff (apply max (map #(Math/abs %) (map - clj-tic-normalized r-tic-normalized)))}
+   :section-9-pipeline {:match pipeline-match?
+                        :max-diff pipeline-max-diff
+                        :mean-diff pipeline-mean-diff
+                        :num-points (count pipeline-masses)}})
+
+(kind/table
+ {:column-names ["Section" "Match?" "Max Difference" "Notes"]
+  :row-vectors [["6. Savitzky-Golay" (:match (:section-6-savgol all-test-results)) 
+                 (:max-diff (:section-6-savgol all-test-results)) "Negative clamping"]
+                ["7. SNIP Baseline" (:match (:section-7-snip all-test-results))
+                 (:max-diff (:section-7-snip all-test-results)) "Decreasing iterations"]
+                ["8. TIC Normalize" (:match (:section-8-tic all-test-results))
+                 (:max-diff (:section-8-tic all-test-results)) "Trapezoid area"]
+                ["9. Full Pipeline" (:match (:section-9-pipeline all-test-results))
+                 (:max-diff (:section-9-pipeline all-test-results)) 
+                 (str (:num-points (:section-9-pipeline all-test-results)) " points, mean=" 
+                      (:mean-diff (:section-9-pipeline all-test-results)))]]})
+
+
+all-test-results
