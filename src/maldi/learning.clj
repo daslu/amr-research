@@ -60,9 +60,7 @@
                                (-> acase
                                    :path
                                    ingestion/load-raw-spectrum
-                                   (update :intensity #(signal/preprocess-spectrum-data
-                                                        %
-                                                        preprocessing-params))
+                                   (signal/preprocess-spectrum-data preprocessing-params)
                                    (binning/bin-spectrum binning-params)))
                              (tc/rows ds :as-maps))))
            (tc/select-rows :features)

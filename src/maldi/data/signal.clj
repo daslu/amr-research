@@ -21,14 +21,16 @@
   (tcc/sqrt intensities))
 
 (defn savitzky-golay-smooth
-  "Apply Savitzky-Golay smoothing to spectrum intensities.
+  "Apply Savitzky-Golay smoothing to spectrum intensities - MALDIquant compatible.
+   
+   MALDIquant clamps negative smoothed values to 0.0 (negative intensities are not physical).
    
    Args:
-   - intensities
+   - intensities: intensity values
    - window-size: smoothing window size (must be odd)
-   - polynomial-order: polynomial order
+   - polynomial-order: polynomial order for fitting
    
-   Returns: smoothed intensities"
+   Returns: smoothed intensities (with negative values clamped to 0)"
   [intensities {:keys [window-size polynomial-order]
                 :or {window-size 11
                      polynomial-order 2}}]
@@ -43,28 +45,31 @@
                       {:data-points n
                        :window-size window-size}))))
 
-  ;; Use JDSP Savgol filter
-  (let [savgol (Savgol. window-size polynomial-order)]
-    (.filter savgol (double-array intensities))))
+  ;; Use JDSP Savgol filter and clamp negative values to 0
+  (let [savgol (Savgol. window-size polynomial-order)
+        smoothed (.filter savgol (double-array intensities))]
+    ;; Clamp negative values to 0.0 (MALDIquant behavior)
+    (double-array (map #(max 0.0 %) smoothed))))
 
 (defn snip-baseline-removal
-  "Remove baseline using improved SNIP (Statistics-sensitive Non-linear Iterative Peak-clipping) algorithm.
+  "Remove baseline using SNIP (Statistics-sensitive Non-linear Iterative Peak-clipping) algorithm.
    
-   This implementation follows the SNIP algorithm more closely:
-   1. Creates a working intensities copy
+   Implements MALDIquant-compatible SNIP algorithm:
+   1. Creates a working intensities copy (baseline estimate)
    2. Iteratively clips peaks by comparing each point to linear interpolation of surrounding points
-   3. Uses increasing window sizes over iterations
+   3. Window size iteration order controlled by decreasing parameter
    4. Returns baseline-corrected intensities (original - baseline)
    
    Args:
-   - intensities
-   - iterations: number of SNIP iterations
-   - decreasing: whether to process in decreasing order
+   - intensities: spectrum intensities
+   - iterations: number of SNIP iterations (controls max window size)
+   - decreasing: if true (MALDIquant default), iterate from large to small windows;
+                 if false, iterate from small to large windows
    
    Returns: baseline-corrected intensities tensor"
   [intensities {:keys [iterations decreasing]
                 :or {iterations 25
-                     decreasing false}}]
+                     decreasing true}}]
 
   (when (<= iterations 0)
     (throw (ex-info "Iterations must be positive" {:iterations iterations})))
@@ -77,53 +82,70 @@
 
     ;; Initialize working copy (will become the baseline estimate)
     (let [working (double-array intensities)
-          indices (if decreasing
-                    (reverse (range n))
-                    (range n))]
+          ;; Window iteration order: decreasing=true means large→small windows (MALDIquant default)
+          window-sequence (if decreasing
+                            (reverse (range 1 (inc iterations)))
+                            (range 1 (inc iterations)))]
 
-      ;; SNIP iterations with increasing window size
-      (doseq [window-half (range 1 (inc iterations))]
-        (doseq [i (-> (range window-half (- n window-half))
-                      (cond-> decreasing reverse))]
-          (let [;; Linear interpolation between surrounding points
-                interpolated (* 0.5 (+ (aget working (- i window-half))
-                                       (aget working (+ i window-half))))
-
-                current-val (aget working i)]
-
-            ;; SNIP clipping: keep minimum of current and interpolated
-            (aset working i (min current-val interpolated)))))
+      ;; SNIP iterations - use temp array to avoid in-place updates
+      (doseq [window-half window-sequence]
+        (let [temp (double-array working)]
+          (doseq [i (range window-half (- n window-half))]
+            (let [;; Linear interpolation between surrounding points
+                  interpolated (* 0.5 (+ (aget working (- i window-half))
+                                         (aget working (+ i window-half))))
+                  current-val (aget working i)]
+              ;; SNIP clipping: keep minimum of current and interpolated
+              (aset temp i (min current-val interpolated))))
+          ;; Copy temp back to working
+          (System/arraycopy temp 0 working 0 n)))
 
       ;; Return baseline-corrected intensities (original - baseline)
       (tcc/- intensities working))))
 
 (defn tic-normalize
-  "Normalize intensities using Total Ion Current (TIC).
-   Scales all intensities so that the total sum equals the target value.
+  "Normalize intensities using Total Ion Current (TIC) - MALDIquant compatible.
+   
+   MALDIquant normalizes the AREA under the curve (using trapezoid rule) to target-area,
+   NOT the sum of intensities. This is important for mass spectrometry data where
+   mass values may not be uniformly spaced.
+   
+   Algorithm:
+   1. Calculate area under curve using trapezoid rule: A = Σ[0.5 * (m[i+1] - m[i]) * (int[i] + int[i+1])]
+   2. Scale all intensities by (target-area / A)
    
    Args:
-   - intensities
-   - target-sum: desired total sum
+   - masses: mass values (required for area calculation)
+   - intensities: intensity values
+   - target-area: desired area under curve (default 1.0, matching MALDIquant)
    
    Returns: normalized intensities tensor
    
-   Note: If all intensities are zero, returns zeros (graceful handling)"
-  ([intensities {:keys [target-sum]
-                 :or {target-sum 1}}]
+   Note: If area is zero, returns zeros (graceful handling)"
+  [masses intensities {:keys [target-area]
+                       :or {target-area 1.0}}]
 
-   (let [current-sum (tcc/sum intensities)]
-     (if (zero? current-sum)
-       (do
-         (log/warn "Cannot normalize zero signal - all intensities are zero. Returning zeros.")
-         (dtype/make-reader :float32
-                            (dtype/ecount intensities)
-                            0.0))
+  ;; Calculate area under curve using trapezoid rule
+  (let [area (reduce +
+                     (map (fn [m1 m2 i1 i2]
+                            (* 0.5 (- m2 m1) (+ i1 i2)))
+                          masses
+                          (rest masses)
+                          intensities
+                          (rest intensities)))]
 
-       ;; else
-       (do (when (< current-sum 1e-10)
-             (log/warn (format "Very small intensity sum detected: %e. Normalization may be unstable." current-sum)))
-           (tcc// intensities
-                  (tcc/sum intensities)))))))
+    (if (zero? area)
+      (do
+        (log/warn "Cannot normalize zero signal - area under curve is zero. Returning zeros.")
+        (dtype/make-reader :float32
+                           (dtype/ecount intensities)
+                           0.0))
+
+      ;; Scale intensities by (target-area / area)
+      (do (when (< area 1e-10)
+            (log/warn (format "Very small area detected: %e. Normalization may be unstable." area)))
+          (tcc// (tcc/* intensities target-area)
+                 area)))))
 
 (defn median-filter
   "Apply median filter for noise reduction.
@@ -313,10 +335,10 @@
     peak-indices))
 
 (defn preprocess-spectrum-data
-  "Apply complete preprocessing pipeline to spectrum data.
+  "Apply full preprocessing pipeline to spectrum data.
    
    Args:
-   - intensities
+   - spectrum: map with :mass and :intensity keys
    - options: map with preprocessing options
      - :sqrt-transform (boolean)
      - :smooth-window (integer) 
@@ -325,24 +347,29 @@
      - :tic-normalize (boolean)
      - :tic-target (number)
    
-   Returns: map with :masses and :intensities keys"
-  [intensities {:as options
-                :keys [should-sqrt-transform smooth-window smooth-polynomial
-                       baseline-iterations should-tic-normalize tic-target]
-                :or {should-sqrt-transform true
-                     smooth-window 11
-                     smooth-polynomial 2
-                     baseline-iterations 25
-                     should-tic-normalize true
-                     tic-target 1.0}}]
-  ;; errors/with-error-handling errors/pipeline-error {:operation :preprocess-spectrum-data
-  ;;                                                   :options options}
+   Returns: map with :mass and :intensity keys (masses unchanged, intensities processed)"
+  [spectrum {:as options
+             :keys [should-sqrt-transform smooth-window smooth-polynomial
+                    baseline-iterations should-tic-normalize tic-target]
+             :or {should-sqrt-transform true
+                  smooth-window 11
+                  smooth-polynomial 2
+                  baseline-iterations 25
+                  should-tic-normalize true
+                  tic-target 1.0}}]
 
-  #_(log/info "Starting spectrum preprocessing pipeline")
+  (let [masses (:mass spectrum)
+        intensities (:intensity spectrum)
 
-  (cond-> intensities
-    should-sqrt-transform (sqrt-transform)
-    true (savitzky-golay-smooth {:window-size smooth-window
-                                 :polynomial-order smooth-polynomial})
-    true (snip-baseline-removal {:iterations baseline-iterations})
-    should-tic-normalize (tic-normalize {:target-sum tic-target})))
+        ;; Apply preprocessing pipeline to intensities
+        processed-intensities
+        (cond-> intensities
+          should-sqrt-transform (sqrt-transform)
+          true (savitzky-golay-smooth {:window-size smooth-window
+                                       :polynomial-order smooth-polynomial})
+          true (snip-baseline-removal {:iterations baseline-iterations})
+          should-tic-normalize (tic-normalize masses {:target-area tic-target}))]
+
+    ;; Return spectrum with processed intensities
+    {:mass masses
+     :intensity processed-intensities}))

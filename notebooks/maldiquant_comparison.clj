@@ -188,3 +188,33 @@
      (every? :match?))
 
 (kind/test-last [true?])
+
+;; ## 5. Square Root Transformation
+;;
+;; Variance-stabilizing transformation for mass spectrometry data.
+
+(def transform-test-data [1.0 4.0 9.0 16.0 25.0])
+
+;; ### R Implementation
+(r `(do
+      (<- transform_mass (seq 2000 2008 :by 2))
+      (<- transform_spec (createMassSpectrum 
+                          :mass transform_mass 
+                          :intensity ~transform-test-data))))
+
+(def r-sqrt-transformed 
+  (r->clj (r `(intensity (transformIntensity transform_spec :method "sqrt")))))
+
+;; ### Clojure Implementation
+(def clj-sqrt-transformed 
+  (vec (signal/sqrt-transform transform-test-data)))
+
+;; ### Comparison
+(kind/table
+ {:column-names ["Metric" "R (MALDIquant)" "Clojure" "Match?"]
+  :row-vectors [["Original" transform-test-data transform-test-data true]
+                ["Transformed" r-sqrt-transformed clj-sqrt-transformed (= r-sqrt-transformed clj-sqrt-transformed)]]})
+
+(= r-sqrt-transformed clj-sqrt-transformed)
+
+(kind/test-last [true?])
