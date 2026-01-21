@@ -52,7 +52,7 @@
               antibiotic (ingestion/all-antibiotics)
               species [bacteria/E-coli
                        bacteria/S-aureus
-                       bacteria/P-aeruginosai]]
+                       bacteria/P-aeruginosa]]
           (let [scenario {:case {:site site
                                  :year year
                                  :antibiotic antibiotic
@@ -82,7 +82,7 @@
                           :n-test "test cases"
                           :pri "probability of R/I"})
       (tc/order-by [:species :antibiotic :site :year])
-      (tc/write-csv! "scenarios-draft-20260116.csv")
+      (tc/write-csv! "scenarios-draft-20260122.csv")
       time))
 
 
