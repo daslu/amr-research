@@ -218,3 +218,202 @@
 (= r-sqrt-transformed clj-sqrt-transformed)
 
 (kind/test-last [true?])
+
+;; ## 6. Savitzky-Golay Smoothing
+
+;; Testing Savitzky-Golay smoothing with negative clamping.
+;; MALDIquant clamps negative smoothed values to 0.0.
+
+;; Test data with noise that produces negative values when smoothed
+(def sg-test-data [0.1 0.05 0.0 0.0 0.0 0.2 0.15 0.1 0.05 0.0])
+
+;; ### R Implementation (MALDIquant)
+(r `(<- sg_spec (createMassSpectrum ~(vec (range 10))
+                                    ~sg-test-data)))
+
+(def r-sg-smoothed
+  (r->clj (r "intensity(smoothIntensity(sg_spec, method='SavitzkyGolay', halfWindowSize=2))")))
+
+;; ### Clojure Implementation
+(def clj-sg-smoothed
+  (vec (signal/savitzky-golay-smooth sg-test-data {:window-size 5})))
+
+;; ### Comparison
+(kind/table
+ {:column-names ["Index" "Original" "R Smoothed" "Clojure Smoothed" "Difference"]
+  :row-vectors (map-indexed
+                (fn [idx [orig r-val clj-val]]
+                  [idx orig r-val clj-val (- clj-val r-val)])
+                (map vector sg-test-data r-sg-smoothed clj-sg-smoothed))})
+
+;; Check that negative clamping works (index 3)
+(kind/md "**Critical: Index 3 should be 0.0 (clamped), not negative**")
+
+;; Test exact match
+(def sg-match? (every? #(< (Math/abs %) 1e-10) 
+                       (map - clj-sg-smoothed r-sg-smoothed)))
+
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Match?" sg-match?]
+                ["Max Difference" (apply max (map #(Math/abs %) (map - clj-sg-smoothed r-sg-smoothed)))]]})
+(kind/test-last [true?])
+
+;; ## 7. SNIP Baseline Removal
+
+;; Testing SNIP with decreasing iteration order (MALDIquant default).
+;; Window sizes iterate from large to small (iterations → 1).
+
+;; Test data - simple peak with baseline
+(def snip-test-data [0.1 0.15 0.2 0.25 0.5 0.8 0.5 0.25 0.2 0.15 0.1])
+
+;; ### R Implementation (MALDIquant)
+(r `(<- snip_spec (createMassSpectrum ~(vec (range 11))
+                                      ~snip-test-data)))
+(def r-snip-corrected
+  (r->clj (r "intensity(removeBaseline(snip_spec, method='SNIP', iterations=10))")))
+
+;; ### Clojure Implementation
+(def clj-snip-corrected
+  (vec (signal/snip-baseline-removal snip-test-data {:iterations 10})))
+
+;; ### Comparison
+(kind/table
+ {:column-names ["Index" "Original" "R Corrected" "Clojure Corrected" "Difference"]
+  :row-vectors (map-indexed
+                (fn [idx [orig r-val clj-val]]
+                  [idx orig r-val clj-val (- clj-val r-val)])
+                (map vector snip-test-data r-snip-corrected clj-snip-corrected))})
+
+;; Test exact match
+(def snip-match? (every? #(< (Math/abs %) 1e-10)
+                         (map - clj-snip-corrected r-snip-corrected)))
+
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Match?" snip-match?]
+                ["Max Difference" (apply max (map #(Math/abs %) (map - clj-snip-corrected r-snip-corrected)))]]})
+(kind/test-last [true?])
+
+;; ## 8. TIC Normalization (Trapezoid Area)
+
+;; Testing TIC normalization using trapezoid rule for area under curve.
+;; MALDIquant normalizes AREA to 1.0, not sum of intensities.
+
+;; Test data with non-uniform spacing
+(def tic-test-masses [1.0 2.0 3.0 4.0])
+(def tic-test-intensities [10.0 20.0 30.0 40.0])
+
+;; ### R Implementation (MALDIquant)
+(r `(<- tic_spec (createMassSpectrum ~tic-test-masses
+                                     ~tic-test-intensities)))
+
+(def r-tic-normalized
+  (r->clj (r "intensity(calibrateIntensity(tic_spec, method='TIC'))")))
+
+;; Verify area calculation
+(def r-area (r->clj (r "sum(intensity(tic_spec))")))
+(def r-normalized-area (r->clj (r "sum(intensity(calibrateIntensity(tic_spec, method='TIC')))")))
+;; ### Clojure Implementation
+(def clj-tic-normalized
+  (vec (signal/tic-normalize tic-test-masses tic-test-intensities {:target-area 1.0})))
+
+;; ### Comparison
+(kind/table
+ {:column-names ["Index" "Mass" "Original" "R Normalized" "Clojure Normalized" "Difference"]
+  :row-vectors (map-indexed
+                (fn [idx [mass orig r-val clj-val]]
+                  [idx mass orig r-val clj-val (- clj-val r-val)])
+                (map vector tic-test-masses tic-test-intensities r-tic-normalized clj-tic-normalized))})
+
+(kind/md "**Note: Sum of normalized intensities ≠ 1.0 (area = 1.0, not sum)**")
+
+(kind/table
+ {:column-names ["Metric" "R" "Clojure"]
+  :row-vectors [["Original Sum" (apply + tic-test-intensities) (apply + tic-test-intensities)]
+                ["Normalized Sum" (apply + r-tic-normalized) (apply + clj-tic-normalized)]
+                ["Original Area" r-area r-area]
+                ["Normalized Area" r-normalized-area r-normalized-area]]})
+
+;; Test exact match
+(def tic-match? (every? #(< (Math/abs %) 1e-10)
+                        (map - clj-tic-normalized r-tic-normalized)))
+
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Match?" tic-match?]
+                ["Max Difference" (apply max (map #(Math/abs %) (map - clj-tic-normalized r-tic-normalized)))]]})
+(kind/test-last [true?])
+
+;; ## 9. Full Preprocessing Pipeline
+
+;; Testing the complete preprocessing pipeline:
+;; sqrt → smooth → baseline → normalize
+
+;; Test data - realistic spectrum fragment
+(def pipeline-masses (vec (range 2000.0 2100.0 1.0)))  ; 100 points, 1 Da spacing
+(def pipeline-intensities 
+  (vec (map (fn [m] 
+              (+ 5.0  ; baseline
+                 (* 0.5 (Math/sin (/ m 10.0)))  ; slow oscillation
+                 (if (< (Math/abs (- m 2050)) 5) 50.0 0.0)  ; peak at 2050
+                 (if (< (Math/abs (- m 2080)) 3) 30.0 0.0)  ; peak at 2080
+                 (* 0.3 (- (rand) 0.5))))  ; noise
+            pipeline-masses)))
+
+;; ### R Implementation (MALDIquant)
+(r `(<- pipeline_spec (createMassSpectrum ~pipeline-masses
+                                          ~pipeline-intensities)))
+
+(def r-pipeline-result
+  (r->clj (r "intensity(calibrateIntensity(
+                removeBaseline(
+                  smoothIntensity(
+                    transformIntensity(pipeline_spec, method='sqrt'),
+                    method='SavitzkyGolay', 
+                    halfWindowSize=5),
+                  method='SNIP', 
+                  iterations=25),
+                method='TIC'))")))
+
+;; ### Clojure Implementation
+(def clj-pipeline-result
+  (let [spectrum {:mass pipeline-masses :intensity pipeline-intensities}
+        processed (signal/preprocess-spectrum-data 
+                   spectrum
+                   {:should-sqrt-transform true
+                    :smooth-window 11
+                    :smooth-polynomial 2
+                    :baseline-iterations 25
+                    :should-tic-normalize true
+                    :tic-target 1.0})]
+    (vec (:intensity processed))))
+
+;; ### Comparison
+(kind/md "**Comparing first 20 points of preprocessed spectrum:**")
+
+(kind/table
+ {:column-names ["Index" "Mass" "R Preprocessed" "Clojure Preprocessed" "Difference"]
+  :row-vectors (take 20
+                     (map-indexed
+                      (fn [idx [mass r-val clj-val]]
+                        [idx mass r-val clj-val (- clj-val r-val)])
+                      (map vector pipeline-masses r-pipeline-result clj-pipeline-result)))})
+
+;; Test exact match across entire spectrum
+(def pipeline-match? (every? #(< (Math/abs %) 1e-10)
+                             (map - clj-pipeline-result r-pipeline-result)))
+
+(def pipeline-max-diff (apply max (map #(Math/abs %) (map - clj-pipeline-result r-pipeline-result))))
+(def pipeline-mean-diff (/ (apply + (map #(Math/abs %) (map - clj-pipeline-result r-pipeline-result)))
+                            (count pipeline-masses)))
+
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Match?" pipeline-match?]
+                ["Points Compared" (count pipeline-masses)]
+                ["Max Difference" pipeline-max-diff]
+                ["Mean Difference" pipeline-mean-diff]]})
+
+(kind/test-last [true?])
+
