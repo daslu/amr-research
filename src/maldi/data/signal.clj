@@ -373,5 +373,6 @@
             $))]
 
     ;; Return spectrum with processed intensities
-    {:mass masses
-     :intensity processed-intensities}))
+    (tc/dataset
+     {:mass masses
+      :intensity processed-intensities})))
