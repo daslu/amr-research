@@ -22,9 +22,13 @@
   (tc/dataset {:mass [2001.5 2004.5 2007.5]
                :intensity [100.0 200.0 300.0]}))
 
+test-spectrum-1
+
 (def binning-params-1
   {:range [2000 2010]
    :step 3})
+
+binning-params-1
 
 ;; Expected bins:
 ;; bin 0: [2000, 2003) -> mass 2001.5, intensity 100.0
@@ -34,6 +38,8 @@
 ;; Total bins: (2010-2000)/3 + 1 = 4
 
 (def binned-1 (binning/bin-spectrum test-spectrum-1 binning-params-1))
+
+binned-1
 
 (kind/table
  {:column-names ["Bin" "Expected" "Actual" "Match?"]
@@ -51,6 +57,8 @@
   (tc/dataset {:mass [2001.0 2002.0 2004.0 2005.0]
                :intensity [100.0 50.0 200.0 75.0]}))
 
+test-spectrum-2
+
 ;; Expected:
 ;; bin 0: [2000, 2003) -> masses 2001.0, 2002.0 -> sum = 150.0
 ;; bin 1: [2003, 2006) -> masses 2004.0, 2005.0 -> sum = 275.0
@@ -58,6 +66,8 @@
 ;; bin 3: [2009, 2012) -> empty -> 0.0
 
 (def binned-2 (binning/bin-spectrum test-spectrum-2 binning-params-1))
+
+binned-2
 
 (kind/table
  {:column-names ["Bin" "Expected" "Actual" "Match?"]
@@ -75,6 +85,8 @@
   (tc/dataset {:mass [1999.0 2001.0 2005.0 2011.0]
                :intensity [999.0 100.0 200.0 888.0]}))
 
+test-spectrum-3
+
 ;; Expected:
 ;; 1999.0 -> out of range (< 2000), filtered
 ;; 2001.0 -> bin 0, intensity 100.0
@@ -82,6 +94,8 @@
 ;; 2011.0 -> out of range (> 2010), filtered
 
 (def binned-3 (binning/bin-spectrum test-spectrum-3 binning-params-1))
+
+binned-3
 
 (kind/table
  {:column-names ["Bin" "Expected" "Actual" "Match?"]
@@ -99,8 +113,12 @@
   {:range [2000 20000]
    :step 3})
 
+driams-params
+
 ;; Number of bins should be (20000-2000)/3 + 1 = 6001
 (def n-bins-driams (binning/calculate-n-bins driams-params))
+
+n-bins-driams
 
 (kind/md (format "**DRIAMS binning creates %d bins**" n-bins-driams))
 
@@ -112,7 +130,11 @@
   (tc/dataset {:mass [2000.0 2003.0 2006.0 10000.0 19999.0]
                :intensity [10.0 20.0 30.0 500.0 999.0]}))
 
+test-spectrum-driams
+
 (def binned-driams (binning/bin-spectrum test-spectrum-driams driams-params))
+
+binned-driams
 
 ;; Verify array length
 (= 6001 (alength binned-driams))
@@ -146,7 +168,11 @@
   (tc/dataset {:mass []
                :intensity []}))
 
+test-spectrum-empty
+
 (def binned-empty (binning/bin-spectrum test-spectrum-empty binning-params-1))
+
+binned-empty
 
 ;; Should create array of zeros
 (= [0.0 0.0 0.0 0.0] (vec binned-empty))
