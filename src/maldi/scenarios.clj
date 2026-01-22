@@ -12,6 +12,33 @@
   (:import (org.tribuo.classification.evaluation LabelEvaluationUtil)))
 
 
+(def species->antibiotics
+  (-> {bacteria/E-coli ["Meropenem"
+                        "Ertapenem"
+                        "Ceftriaxone"
+                        "Cefepime"
+                        "Piperacillin–Tazobactam"
+                        "Nitrofurantoin"
+                        "Ciprofloxacin"
+                        "Cotrimoxazole"]
+       bacteria/S-aureus ["Cotrimoxazole"
+                          "Clindamycin"
+                          "Vancomycin"
+                          "Linezolid"
+                          "Amoxicillin–Clavulanic acid"
+                          "Ampicillin–Amoxicillin"
+                          "Oxacillin"]
+       bacteria/P-aeruginosa ["Piperacillin-Tazobactam"
+                              "Cefepime"
+                              "Ceftazidime"
+                              "Meropenem"
+                              "Amikacin"
+                              "Ciprofloxacin"
+                              "Colistin"
+                              "Tobramycin"]}
+      (update-vals (partial map keyword))))
+
+
 
 (def eval-scenario
   (memoize
@@ -36,7 +63,7 @@
                                   cache/maybe-deref
                                   (tc/add-column :ri (:ri test)))
                result (merge (:case scenario)
-                             (dissoc scenario :case)
+                             scenario
                              (learning/measure split-data
                                                predictions)
                              {:to-measure to-measure})]
@@ -45,14 +72,12 @@
 
 (def summary
   (delay
-    (-> (for [xgboost-rounds [50]
-              binning-step [3]
+    (-> (for [[species antibiotics] species->antibiotics
+              antibiotic antibiotics
               site [:A :B :C :D]
               year [2015 2016 2017 2018]
-              antibiotic (ingestion/all-antibiotics)
-              species [bacteria/E-coli
-                       bacteria/S-aureus
-                       bacteria/P-aeruginosa]]
+              xgboost-rounds [50]
+              binning-step [3]]
           (let [scenario {:case {:site site
                                  :year year
                                  :antibiotic antibiotic
@@ -62,7 +87,8 @@
             (log/info [:scenario scenario])
             (some-> scenario
                     eval-scenario
-                    (dissoc :to-measure))))
+                    (dissoc :to-measure
+                            :case))))
         (->> (remove nil?))
         tc/dataset
         (tc/select-rows #(some-> % :n-test pos?))
@@ -89,20 +115,15 @@
 
 
 (defn vis [{:as evaluated-scenario
-            :keys [train-case test-case]}]
+            :keys [case]}]
   (-> evaluated-scenario
       :to-measure
       ((fn [tm]
-         [(kind/md "## scenario")
-          (kind/table
-           [(merge {"." "training"} train-case)
-            (merge {"." "testing"} test-case)])
-          (kind/md "## statistics")
+         [(kind/code (pr-str case))
           (kind/md (format "**actual resistance probability**: %.02f%%" (-> tm :ri tcc/mean (* 100))))
           (kind/md (format "**predictor AUC**: %.02f%%" (* 100 (LabelEvaluationUtil/binaryAUCROC
                                                                 (boolean-array (tm :ri))
                                                                 (double-array (tm 1))))))
-          (kind/md "## ROC curve")
           #_(let [curve (LabelEvaluationUtil/generatePRCurve
                          (boolean-array (tm :ri))
                          (double-array (tm 1)))]
@@ -121,9 +142,10 @@
                 tc/dataset
                 (ds-print/print-range :all)
                 (tc/order-by [:precision])
+                (plotly/base {:=title "ROC curve"
+                              :=height 300 :=width 400})
                 (plotly/layer-line {:=x :fpr
                                     :=y :tpr})))
-          (kind/md "## calibration curve")
           (-> tm
               (tc/order-by 1)
               (tc/add-column :i (range))
@@ -139,10 +161,36 @@
                                                           tcc/mean)
                              :n #(tc/row-count %)})
               (plotly/base {:=x :signal
-                            :=y :resistance-probability})
+                            :=y :resistance-probability
+                            :=title "calibration curve"
+                            :=height 300 :=width 400})
               plotly/layer-line
-              plotly/layer-point)]))
+              plotly/layer-point)
+          (kind/hiccup
+           [:div {:style "page-break-after: always;"}])]))
+      
       kind/fragment))
+
+
+(->> (for [[species antibiotics] species->antibiotics
+           antibiotic antibiotics
+           site [:A :B :C :D]
+           year [2015 2016 2017 2018]
+           xgboost-rounds [50]
+           binning-step [3]]
+       (let [scenario {:case {:site site
+                              :year year
+                              :antibiotic antibiotic
+                              :species species}
+                       :binning-step binning-step
+                       :xgboost-rounds xgboost-rounds}]
+         (log/info [:scenario scenario])
+         (try (some-> scenario
+                      eval-scenario
+                      vis)
+              (catch Exception e nil))))
+     (remove nil?)
+     kind/fragment)
 
 
 
