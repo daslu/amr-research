@@ -1,4 +1,6 @@
-^{:clay {:kindly/hide-code true}}
+^{:clay {:hide-code true
+         :hide-info-line true
+         :hide-ui-header true}}
 (ns maldi.scenarios
   (:require [maldi.cache :as cache]
             [tablecloth.api :as tc]
@@ -41,7 +43,7 @@
 
 
 
-(def eval-scenario
+(defonce eval-scenario
   (memoize
    (fn [{:as scenario
          :keys [binning-step
@@ -117,43 +119,53 @@
   (kind/hiccup
    [:div {:style "page-break-after: always;"}]))
 
+(defn adjust-layout [template]
+  (-> template
+      plotly/plot
+      (update :layout merge {:height 300
+                             :width 300
+                             :showlegend false})
+      (assoc-in [:layout :margin]
+                {:l 50 :r 20 :b 50 :t 50})))
 
 (defn vis [{:as evaluated-scenario
             :keys [case]}]
   (-> evaluated-scenario
       :to-measure
       ((fn [tm]
-         [(kind/table [(keys case)
-                       (vals case)])
-          (kind/md (format "**actual resistance probability**: %.02f%%" (-> tm :ri tcc/mean (* 100))))
-          (kind/md (format "**predictor AUC**: %.02f%%" (* 100 (LabelEvaluationUtil/binaryAUCROC
-                                                                (boolean-array (tm :ri))
-                                                                (double-array (tm 1))))))
-          (let [curve (LabelEvaluationUtil/generatePRCurve
-                       (boolean-array (tm :ri))
-                       (double-array (tm 1)))]
-            (-> {:precision (.precision curve)
-                 :recall (.recall curve)}
-                tc/dataset
-                (ds-print/print-range :all)
-                (tc/order-by [:precision])
-                (plotly/base {:=title "precision-recall curve"
-                              :=height 300 :=width 350})
-                (plotly/layer-line {:=x :precision
-                                    :=y :recall})))
-          break
-          (let [curve (LabelEvaluationUtil/generateROCCurve
-                       (boolean-array (tm :ri))
-                       (double-array (tm 1)))]
-            (-> {:fpr (.fpr curve)
-                 :tpr (.tpr curve)}
-                tc/dataset
-                (ds-print/print-range :all)
-                (tc/order-by [:precision])
-                (plotly/base {:=title "ROC curve"
-                              :=height 300 :=width 350})
-                (plotly/layer-line {:=x :fpr
-                                    :=y :tpr})))
+         [(kind/table (update-vals case vector))
+          (kind/table 
+           {"actual resistance probability"
+            [(format "%.02f%%" (-> tm :ri tcc/mean (* 100)))]
+            "predictor AUC"
+            [(format "%.02f%%" (* 100 (LabelEvaluationUtil/binaryAUCROC
+                                       (boolean-array (tm :ri))
+                                       (double-array (tm 1)))))]})
+          (kind/table
+           [[(let [curve (LabelEvaluationUtil/generatePRCurve
+                          (boolean-array (tm :ri))
+                          (double-array (tm 1)))]
+               (-> {:precision (.precision curve)
+                    :recall (.recall curve)}
+                   tc/dataset
+                   (ds-print/print-range :all)
+                   (tc/order-by [:precision])
+                   (plotly/base {:=title "precision-recall curve"})
+                   (plotly/layer-line {:=x :precision
+                                       :=y :recall})
+                   adjust-layout))
+             (let [curve (LabelEvaluationUtil/generateROCCurve
+                          (boolean-array (tm :ri))
+                          (double-array (tm 1)))]
+               (-> {:fpr (.fpr curve)
+                    :tpr (.tpr curve)}
+                   tc/dataset
+                   (ds-print/print-range :all)
+                   (tc/order-by [:precision])
+                   (plotly/base {:=title "ROC curve"})
+                   (plotly/layer-line {:=x :fpr
+                                       :=y :tpr})
+                   adjust-layout))]])
           (-> tm
               (tc/order-by 1)
               (tc/add-column :i (range))
@@ -170,10 +182,10 @@
                              :n #(tc/row-count %)})
               (plotly/base {:=x :signal
                             :=y :resistance-probability
-                            :=title "calibration curve"
-                            :=height 300 :=width 350})
+                            :=title "calibration curve"})
               plotly/layer-line
-              plotly/layer-point)
+              plotly/layer-point
+              adjust-layout)
           break]))
       
       kind/fragment))
