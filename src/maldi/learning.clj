@@ -87,7 +87,7 @@
                      sort
                      (cons :ri))))
            (ds-mod/set-inference-target :ri))
-       (catch Exception e nil)))
+       (catch Exception e (print e))))
 
 (comment
   (-> ((cache/cached-fn #'prepare-raw-data) {:site :A
