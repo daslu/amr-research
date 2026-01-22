@@ -1,3 +1,4 @@
+^{:clay {:kindly/hide-code true}}
 (ns maldi.scenarios
   (:require [maldi.cache :as cache]
             [tablecloth.api :as tc]
@@ -50,7 +51,7 @@
                                                                       :binning-params {:range [2000 20000]
                                                                                        :step binning-step}}))]
        (when @ml-data
-         (log/info [:learning scenario])
+         #_(log/info [:learning scenario])
          (let [split-data (-> ml-data
                               ((cache/cached-fn #'learning/split) {:seed 1})
                               cache/maybe-deref)
@@ -67,7 +68,7 @@
                              (learning/measure split-data
                                                predictions)
                              {:to-measure to-measure})]
-           (log/info [:done scenario])
+           #_(log/info [:done scenario])
            result))))))
 
 (def summary
@@ -84,7 +85,7 @@
                                  :species species}
                           :binning-step binning-step
                           :xgboost-rounds xgboost-rounds}]
-            (log/info [:scenario scenario])
+            #_(log/info [:scenario scenario])
             (some-> scenario
                     eval-scenario
                     (dissoc :to-measure
@@ -97,7 +98,7 @@
 
 
 
-(delay
+(comment
   (-> @summary
       (tc/select-columns [:species :antibiotic
                           :site :year
@@ -112,6 +113,9 @@
       time))
 
 
+(def break
+  (kind/hiccup
+   [:div {:style "page-break-after: always;"}]))
 
 
 (defn vis [{:as evaluated-scenario
@@ -119,21 +123,25 @@
   (-> evaluated-scenario
       :to-measure
       ((fn [tm]
-         [(kind/code (pr-str case))
+         [(kind/table [(keys case)
+                       (vals case)])
           (kind/md (format "**actual resistance probability**: %.02f%%" (-> tm :ri tcc/mean (* 100))))
           (kind/md (format "**predictor AUC**: %.02f%%" (* 100 (LabelEvaluationUtil/binaryAUCROC
                                                                 (boolean-array (tm :ri))
                                                                 (double-array (tm 1))))))
-          #_(let [curve (LabelEvaluationUtil/generatePRCurve
-                         (boolean-array (tm :ri))
-                         (double-array (tm 1)))]
-              (-> {:precision (.precision curve)
-                   :recall (.recall curve)}
-                  tc/dataset
-                  (ds-print/print-range :all)
-                  (tc/order-by [:precision])
-                  (plotly/layer-line {:=x :precision
-                                      :=y :recall})))
+          (let [curve (LabelEvaluationUtil/generatePRCurve
+                       (boolean-array (tm :ri))
+                       (double-array (tm 1)))]
+            (-> {:precision (.precision curve)
+                 :recall (.recall curve)}
+                tc/dataset
+                (ds-print/print-range :all)
+                (tc/order-by [:precision])
+                (plotly/base {:=title "precision-recall curve"
+                              :=height 300 :=width 350})
+                (plotly/layer-line {:=x :precision
+                                    :=y :recall})))
+          break
           (let [curve (LabelEvaluationUtil/generateROCCurve
                        (boolean-array (tm :ri))
                        (double-array (tm 1)))]
@@ -143,7 +151,7 @@
                 (ds-print/print-range :all)
                 (tc/order-by [:precision])
                 (plotly/base {:=title "ROC curve"
-                              :=height 300 :=width 400})
+                              :=height 300 :=width 350})
                 (plotly/layer-line {:=x :fpr
                                     :=y :tpr})))
           (-> tm
@@ -163,11 +171,10 @@
               (plotly/base {:=x :signal
                             :=y :resistance-probability
                             :=title "calibration curve"
-                            :=height 300 :=width 400})
+                            :=height 300 :=width 350})
               plotly/layer-line
               plotly/layer-point)
-          (kind/hiccup
-           [:div {:style "page-break-after: always;"}])]))
+          break]))
       
       kind/fragment))
 
@@ -184,7 +191,7 @@
                               :species species}
                        :binning-step binning-step
                        :xgboost-rounds xgboost-rounds}]
-         (log/info [:scenario scenario])
+         #_(log/info [:scenario scenario])
          (try (some-> scenario
                       eval-scenario
                       vis)
