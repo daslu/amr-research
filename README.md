@@ -6,7 +6,7 @@ This project provides well-explained notebooks that walk through the full pipeli
 
 ## Companion Libraries
 
-Signal processing and caching live in standalone libraries (included as local symlinks):
+Signal processing and caching live in standalone libraries:
 
 - **[Ripple](https://github.com/scicloj/ripple)** (`scicloj.ripple.maldi`) — MALDIquant-compatible preprocessing, binning, and peak detection
 - **[Pocket](https://github.com/scicloj/pocket)** (`scicloj.pocket`) — Filesystem-based caching for expensive computations
