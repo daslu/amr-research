@@ -24,8 +24,8 @@
   "Find all files with given extension in data directory"
   [extension]
   (let [dir (base-dir)]
-    (->> (fs/glob dir (str "**/*." extension))
-         (concat (fs/glob dir (str "*." extension)))
+    (->> (fs/glob dir (str "**/*." extension) {:follow-links true})
+         (concat (fs/glob dir (str "*." extension) {:follow-links true}))
          (map str)
          (filter #(fs/regular-file? %))
          distinct
