@@ -1,0 +1,6 @@
+{:quarto {:format {:html {:toc true
+                          :toc-expand 3
+                          :number-depth 1
+                          :toc-depth 4
+                          :theme [:cosmo "notebooks/custom.scss"]}}}
+ :base-target-path ".clay-temp"}

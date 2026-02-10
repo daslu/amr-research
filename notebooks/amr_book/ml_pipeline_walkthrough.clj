@@ -1,4 +1,4 @@
-(ns ml-pipeline-walkthrough
+(ns amr-book.ml-pipeline-walkthrough
   "Progressive walkthrough of the complete ML pipeline.
    
    This notebook demonstrates each stage of the MALDI-TOF AMR prediction pipeline,
@@ -9,7 +9,9 @@
    - With caching (using pocket/caching-fn)"
   (:require [scicloj.amr.learning :as learning]
             [scicloj.pocket :as pocket]
+            [scicloj.amr.data.ingestion :as ingestion]
             [scicloj.amr.data.bacteria :as bacteria]
+            [scicloj.ripple.maldi :as ripple]
             [tablecloth.api :as tc]
             [scicloj.kindly.v4.kind :as kind]))
 
