@@ -4,9 +4,7 @@
 ;; prediction pipeline, showing both direct (uncached) and cached
 ;; variants side by side.
 ;;
-;; The [single prediction](single_prediction.html) notebook covers
-;; the same pipeline more gently; here we focus on the caching
-;; pattern and how [Pocket](https://github.com/scicloj/pocket) threads stages together.
+;; Here we focus on the caching pattern and how [Pocket](https://github.com/scicloj/pocket) threads stages together.
 
 (ns amr-book.ml-pipeline-walkthrough
   (:require

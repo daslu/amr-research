@@ -5,8 +5,7 @@
 ;; using data from a single hospital site and year.
 ;;
 ;; We call the pipeline functions directly (no caching) so each
-;; step is transparent. The next notebook adds caching and
-;; multi-scenario evaluation.
+;; step is transparent.
 
 (ns amr-book.single-prediction
   (:require
@@ -128,6 +127,5 @@ metrics
 ;; ```
 ;;
 ;; Each function takes the output of the previous stage plus
-;; its own configuration. In the [next notebook](caching_and_scenarios.html),
-;; we wrap these functions with [Pocket](https://github.com/scicloj/pocket)'s caching to avoid
-;; recomputing expensive steps.
+;; its own configuration. Wrapping each stage with
+;; [Pocket](https://github.com/scicloj/pocket)'s caching avoids recomputing expensive steps.
