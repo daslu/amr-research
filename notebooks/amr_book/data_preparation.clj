@@ -26,6 +26,33 @@
    ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
    [scicloj.kindly.v4.kind :as kind]))
 
+;; ## From the paper
+;;
+;; [Weis et al.](https://doi.org/10.1038/s41591-021-01619-9) describe
+;; the preprocessing as follows
+;; ([preprint](https://www.biorxiv.org/content/10.1101/2020.07.30.228411v2.full.pdf), pp 28–29):
+;;
+;; > The following preprocessing steps are performed using the R package
+;; > MaldiQuant version 1.19: (1) the measured intensity is transformed
+;; > with a square-root method to stabilize the variance, (2) smoothing
+;; > using the Savitzky-Golay algorithm with half-window-size 10 is
+;; > applied, (3) an estimate of the baseline is removed in 20
+;; > iterations of the SNIP algorithm, (4) the intensity is calibrated
+;; > using the total-ion-current (TIC), and (5) the spectra are trimmed
+;; > to values in a 2,000 to 20,000 Da range.
+;; >
+;; > After preprocessing, each spectrum is represented by a set of
+;; > measurements, each of them described by its corresponding
+;; > mass-to-charge ratio and intensity. However, this representation
+;; > results in each sample having potentially a different
+;; > dimensionality [...]. Since the machine learning methods used in
+;; > this manuscript require their input to be a feature vector of fixed
+;; > dimensionality, intensity measurements are binned using the bin
+;; > size of 3 Da. [...] each sample is represented by a vector
+;; > containing 6,000 features.
+;;
+;; We now walk through each of these steps.
+
 ;; ## Choosing a scenario
 ;;
 ;; We pick a single species / antibiotic / site / year
@@ -49,7 +76,7 @@
 
 (tc/row-count raw-data)
 
-(tc/head (tc/select-columns raw-data [:code :species :ri :path]) 5)
+(tc/select-columns raw-data [:code :species :ri :path])
 
 ;; ### Resistance distribution
 ;;
