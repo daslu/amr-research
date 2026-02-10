@@ -104,6 +104,9 @@
 
 metrics
 
+(kind/test-last
+ #(< 0.5 (:ROCAUC %)))
+
 ;; ### Reading the results
 ;;
 ;; - **ROCAUC** close to 1.0 means the model separates resistant

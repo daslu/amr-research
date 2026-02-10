@@ -1,3 +1,13 @@
+;; # ML Pipeline Walkthrough
+;;
+;; This notebook demonstrates each stage of the MALDI-TOF AMR
+;; prediction pipeline, showing both direct (uncached) and cached
+;; variants side by side.
+;;
+;; The [single prediction](single_prediction.html) notebook covers
+;; the same pipeline more gently; here we focus on the caching
+;; pattern and how Pocket threads stages together.
+
 (ns amr-book.ml-pipeline-walkthrough
   "Progressive walkthrough of the complete ML pipeline.
    
@@ -55,7 +65,7 @@ example-params
 ;; ## Stage 2: Prepare ML Data
 ;;
 ;; Preprocesses spectra (sqrt, smooth, baseline, normalize) and bins them.
-;; Transforms the dataset to have :ri (resistance indicator) and feature columns :x0, :x1, ... :x6000
+;; Transforms the dataset to have :ri (resistance indicator) and feature columns :x0, :x1, ... :x5999
 
 (def ml-params
   {:preprocessing-params {}
@@ -115,7 +125,7 @@ example-params
 
 (def train-params
   {:model-type :xgboost/classification
-   :round 10
+   :round 50
    :num-class 2})
 
 ;; Without caching:

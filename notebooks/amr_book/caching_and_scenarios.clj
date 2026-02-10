@@ -37,25 +37,25 @@
   "Run the AMR prediction pipeline for one species/antibiotic/site/year.
   Returns the evaluation metrics, or nil if insufficient data."
   [{:keys [site year species antibiotic]}]
-  (let [raw-data   (-> {:site site :year year
-                         :species species :antibiotic antibiotic}
-                        ((pocket/caching-fn #'learning/prepare-raw-data)))
-        ml-data    (-> raw-data
-                        ((pocket/caching-fn #'learning/prepare-ml-data)
-                         {:preprocessing-params {}
-                          :binning-params {:range [2000 20000] :step 3}}))
+  (let [raw-data (-> {:site site :year year
+                      :species species :antibiotic antibiotic}
+                     ((pocket/caching-fn #'learning/prepare-raw-data)))
+        ml-data (-> raw-data
+                    ((pocket/caching-fn #'learning/prepare-ml-data)
+                     {:preprocessing-params {}
+                      :binning-params {:range [2000 20000] :step 3}}))
         split-data (-> ml-data
-                        ((pocket/caching-fn #'learning/split) {:seed 1}))
-        model      (-> split-data
-                        ((pocket/caching-fn #'learning/train)
-                         {:model-type :xgboost/classification
-                          :round 50
-                          :num-class 2}))
+                       ((pocket/caching-fn #'learning/split) {:seed 1}))
+        model (-> split-data
+                  ((pocket/caching-fn #'learning/train)
+                   {:model-type :xgboost/classification
+                    :round 50
+                    :num-class 2}))
         predictions (-> split-data
-                         ((pocket/caching-fn #'learning/predict) model))
-        metrics    (-> split-data
-                        ((pocket/caching-fn #'learning/measure) predictions)
-                        deref)]
+                        ((pocket/caching-fn #'learning/predict) model))
+        metrics (-> split-data
+                    ((pocket/caching-fn #'learning/measure) predictions)
+                    deref)]
     metrics))
 
 ;; ### Example: single scenario
@@ -99,6 +99,9 @@ example-metrics-2
        tc/dataset))
 
 scenario-results
+
+(kind/test-last
+ #(= 3 (tc/row-count %)))
 
 ;; ### Comparing results
 ;;

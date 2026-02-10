@@ -1,7 +1,7 @@
 ;; # Preface
 ;;
 
-^{:clay {:hide-code true}}
+^{:kindly/hide-code true}
 (ns index
   (:require
    [clojure.string :as str]

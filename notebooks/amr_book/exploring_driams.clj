@@ -37,7 +37,7 @@
 ;; mass/intensity pairs — typically ~18,000 points spanning
 ;; roughly 2,000–20,000 Da.
 ;;
-;; Let's pick one file from DRIAMS-A 2018:
+;; Let's pick the first file returned by the ingestion utilities:
 
 (def spectrum-path
   (-> (ingestion/find-data-files "txt.gz")
@@ -80,9 +80,11 @@ raw-spectrum
 {:spectra (tc/row-count metadata)
  :columns (count (tc/column-names metadata))}
 
-;; A few rows:
+;; A few rows (showing selected antibiotic columns):
 
-(tc/head metadata 5)
+(-> metadata
+    (tc/select-columns [:code :species :Cefepime :Ciprofloxacin :Ceftriaxone])
+    (tc/head 5))
 
 ;; ### Species distribution
 ;;
@@ -156,6 +158,9 @@ raw-spectrum
   (ripple/bin-spectrum preprocessed {:range [2000 20000] :step 3}))
 
 (count binned)
+
+(kind/test-last
+ #(= % 6000))
 
 ;; Each value is the mean intensity in that 3 Da bin.
 ;; This is the representation fed to the classifier.
