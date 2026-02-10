@@ -15,10 +15,15 @@
 
 (ns amr-book.caching-and-scenarios
   (:require
+   ;; AMR ML pipeline (prepare, train, predict, measure):
    [scicloj.amr.learning :as learning]
+   ;; Bacterial species definitions and antibiotic lists:
    [scicloj.amr.data.bacteria :as bacteria]
+   ;; Filesystem-based caching (https://github.com/scicloj/pocket):
    [scicloj.pocket :as pocket]
+   ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
+   ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
    [scicloj.kindly.v4.kind :as kind]))
 
 ;; ## The caching pattern

@@ -18,10 +18,15 @@
 
 (ns amr-book.exploring-driams
   (:require
+   ;; AMR data loading utilities:
    [scicloj.amr.data.ingestion :as ingestion]
+   ;; Ripple MALDI signal processing (https://clojurecivitas.github.io/ripple/):
    [scicloj.ripple.maldi :as ripple]
+   ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
+   ;; Interactive plotting via Plotly (https://scicloj.github.io/tableplot/):
    [scicloj.tableplot.v1.plotly :as plotly]
+   ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
    [scicloj.kindly.v4.kind :as kind]))
 
 ;; ## Where is the data?

@@ -10,9 +10,13 @@
 
 (ns amr-book.single-prediction
   (:require
+   ;; AMR ML pipeline (prepare, train, predict, measure):
    [scicloj.amr.learning :as learning]
+   ;; Bacterial species definitions and antibiotic lists:
    [scicloj.amr.data.bacteria :as bacteria]
+   ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
+   ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
    [scicloj.kindly.v4.kind :as kind]))
 
 ;; ## Choosing a scenario

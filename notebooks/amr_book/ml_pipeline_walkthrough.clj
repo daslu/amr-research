@@ -9,21 +9,21 @@
 ;; pattern and how Pocket threads stages together.
 
 (ns amr-book.ml-pipeline-walkthrough
-  "Progressive walkthrough of the complete ML pipeline.
-   
-   This notebook demonstrates each stage of the MALDI-TOF AMR prediction pipeline,
-   building progressively from data ingestion to final evaluation.
-   
-   Each stage is shown twice:
-   - Without caching (direct function calls)
-   - With caching (using pocket/caching-fn)"
-  (:require [scicloj.amr.learning :as learning]
-            [scicloj.pocket :as pocket]
-            [scicloj.amr.data.ingestion :as ingestion]
-            [scicloj.amr.data.bacteria :as bacteria]
-            [scicloj.ripple.maldi :as ripple]
-            [tablecloth.api :as tc]
-            [scicloj.kindly.v4.kind :as kind]))
+  (:require
+   ;; AMR ML pipeline (prepare, train, predict, measure):
+   [scicloj.amr.learning :as learning]
+   ;; Filesystem-based caching (https://github.com/scicloj/pocket):
+   [scicloj.pocket :as pocket]
+   ;; AMR data loading utilities:
+   [scicloj.amr.data.ingestion :as ingestion]
+   ;; Bacterial species definitions and antibiotic lists:
+   [scicloj.amr.data.bacteria :as bacteria]
+   ;; Ripple MALDI signal processing (https://clojurecivitas.github.io/ripple/):
+   [scicloj.ripple.maldi :as ripple]
+   ;; Table processing (https://scicloj.github.io/tablecloth/):
+   [tablecloth.api :as tc]
+   ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
+   [scicloj.kindly.v4.kind :as kind]))
 
 ;; ## Example Configuration
 ;;
