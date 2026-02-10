@@ -13,12 +13,15 @@
       (-> f slurp edn/read-string))))
 
 (defn base-dir
-  "Return the DRIAMS base directory.
+  "Return the DRIAMS base directory (always ends with /).
   Checks the DRIAMS_BASE_DIR environment variable first,
   falls back to :base-dir in amr.edn on the classpath."
   []
-  (or (System/getenv "DRIAMS_BASE_DIR")
-      (:base-dir (read-amr-edn))))
+  (let [dir (or (System/getenv "DRIAMS_BASE_DIR")
+                (:base-dir (read-amr-edn)))]
+    (if (str/ends-with? dir "/")
+      dir
+      (str dir "/"))))
 
 (defn find-data-files
   "Find all files with given extension in data directory"
@@ -51,19 +54,18 @@
       parse-raw-file-path))
 
 (def raw-files-dataset
-  (memoize
-   (fn []
-     (-> (find-data-files "txt.gz")
-         (->> (map (fn [path]
-                     (conj (parse-raw-file-path path)
-                           path))))
-         tc/dataset
-         (tc/rename-columns [:site :year :code :path])
-         (tc/map-columns :year :year #(Integer/parseInt %))
-         (tc/map-columns :site :site keyword)))))
+  (delay
+    (-> (find-data-files "txt.gz")
+        (->> (map (fn [path]
+                    (conj (parse-raw-file-path path)
+                          path))))
+        tc/dataset
+        (tc/rename-columns [:site :year :code :path])
+        (tc/map-columns :year :year #(Integer/parseInt %))
+        (tc/map-columns :site :site keyword))))
 
 (comment
-  (raw-files-dataset))
+  @raw-files-dataset)
 
 (defn load-raw-spectrum
   "Load raw spectrum data from file"
@@ -73,7 +75,7 @@
       (tc/rename-columns [:mass :intensity])))
 
 (comment
-  (-> (raw-files-dataset)
+  (-> @raw-files-dataset
       :path
       first
       load-raw-spectrum))
@@ -81,7 +83,7 @@
 (defn available-cases
   "Get all available cases from data directory"
   []
-  (-> (raw-files-dataset)
+  (-> @raw-files-dataset
       (tc/unique-by [:site :year :code])))
 
 (comment
@@ -89,7 +91,7 @@
 
 (defn available-site-years
   []
-  (-> (raw-files-dataset)
+  (-> @raw-files-dataset
       (tc/select-columns [:site :year])
       (tc/unique-by [:site :year])))
 
@@ -112,7 +114,7 @@
                   :year 2018}))
 
 (defn example-path []
-  (-> (raw-files-dataset)
+  (-> @raw-files-dataset
       (tc/select-rows #(and (= (:year %) 2018)
                             (= (:site %) :A)))
       :path
@@ -122,33 +124,31 @@
   (load-raw-spectrum (example-path)))
 
 (def all-antibiotics
-  (memoize
-   (fn []
-     (->> (tc/rows (available-site-years) :as-maps)
-          (mapcat (fn [acase]
-                    (-> acase
-                        load-metadata
-                        (tc/drop-columns [:code :species :laboratory_species
-                                          :$error :$value
-                                          :column-0 :combined_code
-                                          (keyword "Unnamed: 0")])
-                        keys)))
-          distinct
-          sort))))
+  (delay
+    (->> (tc/rows (available-site-years) :as-maps)
+         (mapcat (fn [acase]
+                   (-> acase
+                       load-metadata
+                       (tc/drop-columns [:code :species :laboratory_species
+                                         :$error :$value
+                                         :column-0 :combined_code
+                                         (keyword "Unnamed: 0")])
+                       keys)))
+         distinct
+         sort)))
 
 (comment
-  (all-antibiotics))
+  @all-antibiotics)
 
 (def all-bacteria
-  (memoize
-   (fn []
-     (->> (tc/rows (available-site-years) :as-maps)
-          (mapcat (fn [acase]
-                    (-> acase
-                        load-metadata
-                        :species)))
-          distinct
-          sort))))
+  (delay
+    (->> (tc/rows (available-site-years) :as-maps)
+         (mapcat (fn [acase]
+                   (-> acase
+                       load-metadata
+                       :species)))
+         distinct
+         sort)))
 
 (comment
-  (all-bacteria))
+  @all-bacteria)

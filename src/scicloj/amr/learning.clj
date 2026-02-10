@@ -17,8 +17,9 @@
 (defn prepare-raw-data
   [{:keys [site year species antibiotic]}]
   (let [cases (ingestion/available-cases)
-        metadata (ingestion/load-metadata {:site site
-                                           :year year})
+        metadata (or (ingestion/load-metadata {:site site :year year})
+                     (throw (ex-info "Metadata not found"
+                                     {:site site :year year})))
         filtered-cases-1 (-> cases
                              (tc/select-rows #(and (= (:site %) site)
                                                    (= (:year %) year))))
@@ -27,7 +28,7 @@
                            (-> filtered-cases-1
                                (tc/left-join metadata [:code])
                                (tc/select-rows #(and (= (:species %) species)
-                                                     (contains? % antibiotic)))))]
+                                                     (some? (get % antibiotic))))))]
     (when (some-> filtered-cases-2
                   tc/row-count
                   pos?)
