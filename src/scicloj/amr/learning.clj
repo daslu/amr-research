@@ -2,19 +2,16 @@
   (:require [scicloj.amr.data.ingestion :as ingestion]
             [scicloj.ripple.maldi :as ripple]
             [tablecloth.api :as tc]
-            [scicloj.tableplot.v1.plotly :as plotly]
             [tech.v3.parallel.for :as pfor]
             [tech.v3.datatype :as dtype]
             [tech.v3.tensor :as tensor]
             [scicloj.metamorph.ml :as ml]
             [tech.v3.dataset.modelling :as ds-mod]
-            [tech.v3.dataset.print :as ds-print]
             [scicloj.amr.data.bacteria :as bacteria]
             [scicloj.ml.xgboost]
             [scicloj.pocket :as pocket]
             [clojure.tools.logging :as log]
-            [tablecloth.column.api :as tcc]
-            [scicloj.kindly.v4.kind :as kind])
+            [tablecloth.column.api :as tcc])
   (:import (org.tribuo.classification.evaluation LabelEvaluationUtil)))
 
 (defn prepare-raw-data
@@ -46,7 +43,6 @@
       deref
       time))
 
-
 (defn prepare-ml-data
   "Prepare complete training dataset from cases"
   [raw-data {:keys [preprocessing-params binning-params]}]
@@ -63,30 +59,32 @@
                                    (ripple/bin-spectrum binning-params)))
                              (tc/rows ds :as-maps))))
            (tc/select-rows :features)
-           (as->  ds
-               (tc/add-columns
-                ds
-                (-> ds
-                    :features
-                    tensor/->tensor
-                    (as-> t
-                        (zipmap (->> t
-                                     dtype/shape
-                                     second
-                                     range
-                                     (map (comp keyword (partial str "x"))))
-                                (tensor/transpose t [1 0])))
-                    tc/dataset)))
-           (as->  ds
-               (tc/select-columns
-                ds
-                (->> ds
-                     keys
-                     (filter #(re-matches #"x[0-9]*" (name %)))
-                     sort
-                     (cons :ri))))
+           (as-> ds
+                 (tc/add-columns
+                  ds
+                  (-> ds
+                      :features
+                      tensor/->tensor
+                      (as-> t
+                            (zipmap (->> t
+                                         dtype/shape
+                                         second
+                                         range
+                                         (map (comp keyword (partial str "x"))))
+                                    (tensor/transpose t [1 0])))
+                      tc/dataset)))
+           (as-> ds
+                 (tc/select-columns
+                  ds
+                  (->> ds
+                       keys
+                       (filter #(re-matches #"x[0-9]*" (name %)))
+                       sort
+                       (cons :ri))))
            (ds-mod/set-inference-target :ri))
-       (catch Exception e nil)))
+       (catch Exception e
+         (log/warn e "prepare-ml-data failed")
+         nil)))
 
 (comment
   (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
@@ -134,11 +132,10 @@
                                                                :step 3}})
       ((pocket/caching-fn #'split) {:seed 1})
       ((pocket/caching-fn #'train) {:model-type :xgboost/classification
-                                    :round 10
+                                    :round 50
                                     :num-class 2})
       deref
       time))
-
 
 (defn predict
   [split-data model]
@@ -159,13 +156,12 @@
                        ((pocket/caching-fn #'split) {:seed 1}))
         model (-> split-data
                   ((pocket/caching-fn #'train) {:model-type :xgboost/classification
-                                                :round 10
+                                                :round 50
                                                 :num-class 2}))]
     (->> model
          ((pocket/caching-fn #'predict) split-data)
          deref
          time)))
-
 
 (defn measure
   [split-data predictions]
@@ -183,7 +179,6 @@
                 (boolean-array (to-measure :ri))
                 (double-array (to-measure 1)))})))
 
-
 (comment
   (let [split-data (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
                                                                 :year 2018
@@ -195,7 +190,7 @@
                        ((pocket/caching-fn #'split) {:seed 1}))
         model (-> split-data
                   ((pocket/caching-fn #'train) {:model-type :xgboost/classification
-                                                :round 10
+                                                :round 50
                                                 :num-class 2}))]
     (->> model
          ((pocket/caching-fn #'predict) split-data)
