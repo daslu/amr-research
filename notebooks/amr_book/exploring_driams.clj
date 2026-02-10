@@ -112,8 +112,10 @@ raw-spectrum
                   :=title "Top 15 species — DRIAMS-A 2018"
                   :=x-title "Number of spectra"
                   :=y-title ""})
-    (plotly/layer-bar {:=horizontal true})
-    plotly/plot)
+    (plotly/layer-bar)
+    plotly/plot
+    (assoc-in [:data 0 :orientation] :h)
+    (assoc-in [:layout :margin :l] 200))
 
 ;; ### Antibiotics
 ;;
