@@ -4,13 +4,6 @@
 
 This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to [XGBoost](https://xgboost.readthedocs.io/) classification — making it convenient for researchers to explore, reproduce, and extend this line of work in [Clojure](https://clojure.org/).
 
-## Companion Libraries
-
-Signal processing and caching live in standalone libraries:
-
-- **[Ripple](https://github.com/scicloj/ripple)** (`scicloj.ripple.maldi`) — MALDIquant-compatible preprocessing, binning, and peak detection
-- **[Pocket](https://github.com/scicloj/pocket)** (`scicloj.pocket`) — Filesystem-based caching for expensive computations
-
 ## Setup
 
 ### 1. Get the DRIAMS dataset
@@ -43,15 +36,7 @@ Or edit `amr.edn` in the project root:
 {:base-dir "/path/to/DRIAMS/"}
 ```
 
-### 3. Start the REPL
-
-```bash
-clojure -M:nrepl-for-mcp
-```
-
-This starts an [nREPL](https://nrepl.org/) server on port 7100.
-
-### 4. Render the notebooks
+### 3. Render the notebooks
 
 From the REPL:
 
@@ -59,6 +44,18 @@ From the REPL:
 (require '[dev])
 (dev/make-book!)
 ```
+
+## Key Libraries
+
+This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem:
+
+- **[tablecloth](https://scicloj.github.io/tablecloth/)** — dataframe library for tabular data manipulation (built on [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [dtype-next](https://github.com/cnuernber/dtype-next))
+- **[metamorph.ml](https://github.com/scicloj/metamorph.ml)** — machine learning pipelines ([XGBoost](https://xgboost.readthedocs.io/) classification in this project)
+- **[tableplot](https://scicloj.github.io/tableplot/)** — interactive plotting via [Plotly](https://plotly.com/javascript/)
+- **[Ripple](https://clojurecivitas.github.io/ripple/)** (`scicloj.ripple.maldi`) — [MALDIquant](https://strimmerlab.github.io/software/maldiquant/)-compatible signal preprocessing, binning, and peak detection
+- **[Pocket](https://github.com/scicloj/pocket)** (`scicloj.pocket`) — filesystem-based caching for expensive computations
+- **[fastmath](https://github.com/generateme/fastmath)** — numerical and statistical functions
+- **[Kindly](https://scicloj.github.io/kindly-noted/)** — annotation system for notebook visualizations (used with [Clay](https://scicloj.github.io/clay/) for rendering)
 
 ## References
 
