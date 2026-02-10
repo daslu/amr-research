@@ -1,4 +1,5 @@
-{"Exploring the Data"   ["exploring_driams"]
+{"Exploring the Data"   ["exploring_driams"
+                         "data_preparation"]
  "ML Pipeline"          ["single_prediction"
                          "caching_and_scenarios"]
  "Full Walkthrough"     ["ml_pipeline_walkthrough"]}

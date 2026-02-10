@@ -48,7 +48,7 @@
 ;;
 ;; This is the expensive step. For each spectrum:
 ;; 1. Load the raw `.txt.gz` file
-;; 2. Preprocess (sqrt, smooth, baseline, normalize) via [Ripple](https://clojurecivitas.github.io/ripple/)
+;; 2. Preprocess (sqrt, smooth, baseline, normalize) via [Ripple](https://scicloj.github.io/ripple)
 ;; 3. Bin to 6,000 features (3 Da bins over [2000, 20000] Da)
 ;;
 ;; The result is a dataset with columns `:ri`, `:x0`, `:x1`, ... `:x5999`.

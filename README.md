@@ -52,7 +52,7 @@ This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem:
 - **[tablecloth](https://scicloj.github.io/tablecloth/)** — dataframe library for tabular data manipulation (built on [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [dtype-next](https://github.com/cnuernber/dtype-next))
 - **[metamorph.ml](https://github.com/scicloj/metamorph.ml)** — machine learning pipelines ([XGBoost](https://xgboost.readthedocs.io/) classification in this project)
 - **[tableplot](https://scicloj.github.io/tableplot/)** — interactive plotting via [Plotly](https://plotly.com/javascript/)
-- **[Ripple](https://clojurecivitas.github.io/ripple/)** (`scicloj.ripple.maldi`) — [MALDIquant](https://strimmerlab.github.io/software/maldiquant/)-compatible signal preprocessing, binning, and peak detection
+- **[Ripple](https://scicloj.github.io/ripple)** (`scicloj.ripple.maldi`) — [MALDIquant](https://strimmerlab.github.io/software/maldiquant/)-compatible signal preprocessing, binning, and peak detection
 - **[Pocket](https://github.com/scicloj/pocket)** (`scicloj.pocket`) — filesystem-based caching for expensive computations
 - **[fastmath](https://github.com/generateme/fastmath)** — numerical and statistical functions
 - **[Kindly](https://scicloj.github.io/kindly-noted/)** — annotation system for notebook visualizations (used with [Clay](https://scicloj.github.io/clay/) for rendering)

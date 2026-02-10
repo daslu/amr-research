@@ -20,7 +20,7 @@
   (:require
    ;; AMR data loading utilities:
    [scicloj.amr.data.ingestion :as ingestion]
-   ;; Ripple MALDI signal processing (https://clojurecivitas.github.io/ripple/):
+   ;; Ripple MALDI signal processing (https://scicloj.github.io/ripple):
    [scicloj.ripple.maldi :as ripple]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
@@ -134,7 +134,7 @@ raw-spectrum
 ;;
 ;; The DRIAMS paper applies: square root transform, [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter)
 ;; smoothing, [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal, and TIC normalization.
-;; [Ripple](https://clojurecivitas.github.io/ripple/) does this in one call:
+;; [Ripple](https://scicloj.github.io/ripple) does this in one call:
 
 (def preprocessed
   (ripple/preprocess-spectrum-data

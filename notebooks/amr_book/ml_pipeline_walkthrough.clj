@@ -16,7 +16,7 @@
    [scicloj.amr.data.ingestion :as ingestion]
    ;; Bacterial species definitions and antibiotic lists:
    [scicloj.amr.data.bacteria :as bacteria]
-   ;; Ripple MALDI signal processing (https://clojurecivitas.github.io/ripple/):
+   ;; Ripple MALDI signal processing (https://scicloj.github.io/ripple):
    [scicloj.ripple.maldi :as ripple]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
