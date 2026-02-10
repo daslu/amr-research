@@ -8,7 +8,7 @@ This project provides well-explained notebooks that walk through the full pipeli
 
 ### 1. Get the DRIAMS dataset
 
-Download from the [Dryad repository](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q) and extract so site folders are under a single directory:
+Download from the [Dryad repository](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q) and extract so site folders are under a single directory. You may remove the `preprocessing` subdirectories:
 
 ```
 /path/to/DRIAMS/
