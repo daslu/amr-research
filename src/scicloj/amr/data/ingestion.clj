@@ -1,20 +1,35 @@
 (ns scicloj.amr.data.ingestion
   (:require [tablecloth.api :as tc]
             [babashka.fs :as fs]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.java.io :as io]
+            [clojure.edn :as edn]))
 
-(def ^:dynamic *base-dir*
-  (System/getenv "DRIAMS_BASE_DIR"))
+(defn- read-amr-edn
+  "Read amr.edn from the project directory, returning nil if not found."
+  []
+  (let [f (io/file "amr.edn")]
+    (when (.exists f)
+      (-> f slurp edn/read-string))))
+
+(defn base-dir
+  "Return the DRIAMS base directory.
+  Checks the DRIAMS_BASE_DIR environment variable first,
+  falls back to :base-dir in amr.edn on the classpath."
+  []
+  (or (System/getenv "DRIAMS_BASE_DIR")
+      (:base-dir (read-amr-edn))))
 
 (defn find-data-files
   "Find all files with given extension in data directory"
   [extension]
-  (->> (fs/glob *base-dir* (str "**/*." extension))
-       (concat (fs/glob *base-dir* (str "*." extension))) ; Also check base directory
-       (map str)
-       (filter #(fs/regular-file? %))
-       distinct
-       sort))
+  (let [dir (base-dir)]
+    (->> (fs/glob dir (str "**/*." extension))
+         (concat (fs/glob dir (str "*." extension)))
+         (map str)
+         (filter #(fs/regular-file? %))
+         distinct
+         sort)))
 
 (comment
   (find-data-files "txt.gz"))
@@ -25,7 +40,7 @@
   (-> path
       (str/split #"\.")
       first
-      (str/replace *base-dir* "")
+      (str/replace (base-dir) "")
       (str/replace #"DRIAMS-" "")
       (str/replace #"raw/" "")
       (str/split #"/")))
@@ -34,7 +49,6 @@
   (-> (find-data-files "txt.gz")
       first
       parse-raw-file-path))
-
 
 (def raw-files-dataset
   (memoize
@@ -50,7 +64,6 @@
 
 (comment
   (raw-files-dataset))
-
 
 (defn load-raw-spectrum
   "Load raw spectrum data from file"
@@ -87,7 +100,7 @@
   "Load metadata/labels for cases"
   [{:keys [year site]}]
   (let [path (format "%sDRIAMS-%s/id/%d/%d_clean.csv.gz"
-                     *base-dir*
+                     (base-dir)
                      (name site)
                      year
                      year)]
@@ -108,7 +121,6 @@
 (comment
   (load-raw-spectrum (example-path)))
 
-
 (def all-antibiotics
   (memoize
    (fn []
@@ -124,10 +136,8 @@
           distinct
           sort))))
 
-
 (comment
   (all-antibiotics))
-
 
 (def all-bacteria
   (memoize
@@ -139,7 +149,6 @@
                         :species)))
           distinct
           sort))))
-
 
 (comment
   (all-bacteria))
