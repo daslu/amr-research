@@ -1,4 +1,4 @@
-(ns maldi.data.bacteria)
+(ns scicloj.amr.data.bacteria)
 
 (def E-coli "Escherichia coli")
 (def S-aureus "Staphylococcus aureus")

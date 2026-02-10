@@ -1,4 +1,4 @@
-(ns maldi.data.ingestion
+(ns scicloj.amr.data.ingestion
   (:require [tablecloth.api :as tc]
             [babashka.fs :as fs]
             [clojure.string :as str]))

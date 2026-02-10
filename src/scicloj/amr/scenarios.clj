@@ -1,14 +1,14 @@
 ^{:clay {:hide-code true
          :hide-info-line true
          :hide-ui-header true}}
-(ns maldi.scenarios
-  (:require [maldi.cache :as cache]
+(ns scicloj.amr.scenarios
+  (:require [scicloj.pocket :as pocket]
             [tablecloth.api :as tc]
             [scicloj.kindly.v4.kind :as kind]
-            [maldi.learning :as learning]
+            [scicloj.amr.learning :as learning]
             [clojure.tools.logging :as log]
-            [maldi.data.bacteria :as bacteria]
-            [maldi.data.ingestion :as ingestion]
+            [scicloj.amr.data.bacteria :as bacteria]
+            [scicloj.amr.data.ingestion :as ingestion]
             [tech.v3.dataset.print :as ds-print]
             [scicloj.tableplot.v1.plotly :as plotly]
             [tablecloth.column.api :as tcc])
@@ -48,29 +48,27 @@
    (fn [{:as scenario
          :keys [binning-step
                 xgboost-rounds]}]
-     (let [ml-data (-> ((cache/cached-fn #'learning/prepare-raw-data) (:case scenario))
-                       ((cache/cached-fn #'learning/prepare-ml-data) {:preprocessing-params {}
-                                                                      :binning-params {:range [2000 20000]
-                                                                                       :step binning-step}}))]
+     (let [ml-data (-> ((pocket/caching-fn #'learning/prepare-raw-data) (:case scenario))
+                       ((pocket/caching-fn #'learning/prepare-ml-data) {:preprocessing-params {}
+                                                                        :binning-params {:range [2000 20000]
+                                                                                         :step binning-step}}))]
        (when @ml-data
-         #_(log/info [:learning scenario])
          (let [split-data (-> ml-data
-                              ((cache/cached-fn #'learning/split) {:seed 1})
-                              cache/maybe-deref)
+                              ((pocket/caching-fn #'learning/split) {:seed 1})
+                              pocket/maybe-deref)
                {:keys [train test]} split-data
-               model (cache/cached #'learning/train split-data {:model-type :xgboost/classification
-                                                                :round xgboost-rounds
-                                                                :num-class 2})
-               predictions @(cache/cached #'learning/predict split-data model)
+               model (pocket/cached #'learning/train split-data {:model-type :xgboost/classification
+                                                                 :round xgboost-rounds
+                                                                 :num-class 2})
+               predictions @(pocket/cached #'learning/predict split-data model)
                to-measure (some-> predictions
-                                  cache/maybe-deref
+                                  pocket/maybe-deref
                                   (tc/add-column :ri (:ri test)))
                result (merge (:case scenario)
                              scenario
                              (learning/measure split-data
                                                predictions)
                              {:to-measure to-measure})]
-           #_(log/info [:done scenario])
            result))))))
 
 (def summary
@@ -87,7 +85,6 @@
                                  :species species}
                           :binning-step binning-step
                           :xgboost-rounds xgboost-rounds}]
-            #_(log/info [:scenario scenario])
             (some-> scenario
                     eval-scenario
                     (dissoc :to-measure
@@ -203,16 +200,9 @@
                               :species species}
                        :binning-step binning-step
                        :xgboost-rounds xgboost-rounds}]
-         #_(log/info [:scenario scenario])
          (try (some-> scenario
                       eval-scenario
                       vis)
               (catch Exception e nil))))
      (remove nil?)
      kind/fragment)
-
-
-
-
-
-

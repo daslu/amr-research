@@ -6,10 +6,10 @@
    
    Each stage is shown twice:
    - Without caching (direct function calls)
-   - With caching (using cache/cached-fn)"
-  (:require [maldi.learning :as learning]
-            [maldi.cache :as cache]
-            [maldi.data.bacteria :as bacteria]
+   - With caching (using pocket/caching-fn)"
+  (:require [scicloj.amr.learning :as learning]
+            [scicloj.pocket :as pocket]
+            [scicloj.amr.data.bacteria :as bacteria]
             [tablecloth.api :as tc]
             [scicloj.kindly.v4.kind :as kind]))
 
@@ -44,7 +44,7 @@ example-params
 ;; With caching:
 (def raw-data-cached
   (-> example-params
-      ((cache/cached-fn #'learning/prepare-raw-data))
+      ((pocket/caching-fn #'learning/prepare-raw-data))
       deref))
 
 [(tc/row-count raw-data-cached)
@@ -70,8 +70,8 @@ example-params
 ;; With caching:
 (def ml-data-cached
   (-> example-params
-      ((cache/cached-fn #'learning/prepare-raw-data))
-      ((cache/cached-fn #'learning/prepare-ml-data) ml-params)
+      ((pocket/caching-fn #'learning/prepare-raw-data))
+      ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
       deref))
 
 [(tc/row-count ml-data-cached)
@@ -97,9 +97,9 @@ example-params
 ;; With caching:
 (def split-data-cached
   (-> example-params
-      ((cache/cached-fn #'learning/prepare-raw-data))
-      ((cache/cached-fn #'learning/prepare-ml-data) ml-params)
-      ((cache/cached-fn #'learning/split) split-params)
+      ((pocket/caching-fn #'learning/prepare-raw-data))
+      ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
+      ((pocket/caching-fn #'learning/split) split-params)
       deref))
 
 [(keys split-data-cached)
@@ -125,10 +125,10 @@ example-params
 ;; With caching:
 (def model-cached
   (-> example-params
-      ((cache/cached-fn #'learning/prepare-raw-data))
-      ((cache/cached-fn #'learning/prepare-ml-data) ml-params)
-      ((cache/cached-fn #'learning/split) split-params)
-      ((cache/cached-fn #'learning/train) train-params)
+      ((pocket/caching-fn #'learning/prepare-raw-data))
+      ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
+      ((pocket/caching-fn #'learning/split) split-params)
+      ((pocket/caching-fn #'learning/train) train-params)
       deref))
 
 (keys model-cached)
@@ -150,13 +150,13 @@ example-params
 ;; With caching:
 (def predictions-cached
   (let [split-data (-> example-params
-                       ((cache/cached-fn #'learning/prepare-raw-data))
-                       ((cache/cached-fn #'learning/prepare-ml-data) ml-params)
-                       ((cache/cached-fn #'learning/split) split-params))
+                       ((pocket/caching-fn #'learning/prepare-raw-data))
+                       ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
+                       ((pocket/caching-fn #'learning/split) split-params))
         model (-> split-data
-                  ((cache/cached-fn #'learning/train) train-params))]
+                  ((pocket/caching-fn #'learning/train) train-params))]
     (-> split-data
-        ((cache/cached-fn #'learning/predict) model)
+        ((pocket/caching-fn #'learning/predict) model)
         deref)))
 
 [(tc/row-count predictions-cached)
@@ -176,15 +176,15 @@ metrics-no-cache
 ;; With caching:
 (def metrics-cached
   (let [split-data (-> example-params
-                       ((cache/cached-fn #'learning/prepare-raw-data))
-                       ((cache/cached-fn #'learning/prepare-ml-data) ml-params)
-                       ((cache/cached-fn #'learning/split) split-params))
+                       ((pocket/caching-fn #'learning/prepare-raw-data))
+                       ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
+                       ((pocket/caching-fn #'learning/split) split-params))
         model (-> split-data
-                  ((cache/cached-fn #'learning/train) train-params))
+                  ((pocket/caching-fn #'learning/train) train-params))
         predictions (-> split-data
-                        ((cache/cached-fn #'learning/predict) model))]
+                        ((pocket/caching-fn #'learning/predict) model))]
     (-> split-data
-        ((cache/cached-fn #'learning/measure) predictions)
+        ((pocket/caching-fn #'learning/measure) predictions)
         deref)))
 
 metrics-cached
@@ -193,17 +193,17 @@ metrics-cached
 ;;
 ;; The complete pipeline has 6 stages:
 ;;
-;; 1. **prepare-raw-data**: Load metadata and filter by species/antibiotic/site/year → 1400 samples
-;; 2. **prepare-ml-data**: Preprocess (sqrt, smooth, baseline, normalize) and bin spectra → 6001 features per sample
-;; 3. **split**: Create train/test split → 933 train, 467 test
-;; 4. **train**: Train XGBoost classifier (10 rounds) → model map
-;; 5. **predict**: Generate predictions on test set → dataset with class probabilities
-;; 6. **measure**: Calculate ROCAUC (0.78) and PRAUC (0.60) metrics
+;; 1. **prepare-raw-data**: Load metadata and filter by species/antibiotic/site/year
+;; 2. **prepare-ml-data**: Preprocess (sqrt, smooth, baseline, normalize) and bin spectra
+;; 3. **split**: Create train/test split
+;; 4. **train**: Train XGBoost classifier
+;; 5. **predict**: Generate predictions on test set
+;; 6. **measure**: Calculate ROCAUC and PRAUC metrics
 ;;
 ;; ### Caching Benefits
 ;;
 ;; The cached version enables:
-;; - **Reusing expensive computations**: Preprocessing 1400 spectra is slow; cached results are instant
+;; - **Reusing expensive computations**: Preprocessing spectra is slow; cached results are instant
 ;; - **Reproducible experiments**: Cache keys are deterministic based on inputs
 ;; - **Incremental development**: Add pipeline stages without re-running earlier ones
 ;; - **Parallel execution**: Different scenarios can share cached preprocessing results
@@ -213,8 +213,8 @@ metrics-cached
 ;; Notice the threading pattern in the cached version:
 ;; ```clojure
 ;; (-> params
-;;     ((cache/cached-fn #'fn1))
-;;     ((cache/cached-fn #'fn2) params2)
+;;     ((pocket/caching-fn #'fn1))
+;;     ((pocket/caching-fn #'fn2) params2)
 ;;     deref)
 ;; ```
 ;;
