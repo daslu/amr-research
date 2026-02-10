@@ -1,7 +1,7 @@
 ;; # A Single AMR Prediction
 ;;
 ;; This notebook walks through the simplest case: predicting
-;; antimicrobial resistance for **one species and one antibiotic**
+;; [antimicrobial resistance](https://en.wikipedia.org/wiki/Antimicrobial_resistance) for **one species and one antibiotic**
 ;; using data from a single hospital site and year.
 ;;
 ;; We call the pipeline functions directly (no caching) so each
@@ -49,7 +49,7 @@
 ;;
 ;; This is the expensive step. For each spectrum:
 ;; 1. Load the raw `.txt.gz` file
-;; 2. Preprocess (sqrt, smooth, baseline, normalize) via Ripple
+;; 2. Preprocess (sqrt, smooth, baseline, normalize) via [Ripple](https://clojurecivitas.github.io/ripple/)
 ;; 3. Bin to 6,000 features (3 Da bins over [2000, 20000] Da)
 ;;
 ;; The result is a dataset with columns `:ri`, `:x0`, `:x1`, ... `:x5999`.
@@ -129,5 +129,5 @@ metrics
 ;;
 ;; Each function takes the output of the previous stage plus
 ;; its own configuration. In the [next notebook](caching_and_scenarios.html),
-;; we wrap these functions with Pocket's caching to avoid
+;; we wrap these functions with [Pocket](https://github.com/scicloj/pocket)'s caching to avoid
 ;; recomputing expensive steps.

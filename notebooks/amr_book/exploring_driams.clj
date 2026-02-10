@@ -2,7 +2,7 @@
 ;;
 ;; The [DRIAMS dataset](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q)
 ;; is a large collection of [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization)
-;; mass spectra linked to antimicrobial resistance profiles,
+;; mass spectra linked to [antimicrobial resistance](https://en.wikipedia.org/wiki/Antimicrobial_resistance) profiles,
 ;; published by [Weis et al. (2022)](https://doi.org/10.1038/s41591-021-01619-9).
 ;;
 ;; It contains spectra from four Swiss hospital sites:
@@ -130,9 +130,9 @@ raw-spectrum
 
 ;; ## Preprocessing with Ripple
 ;;
-;; The DRIAMS paper applies: square root transform, Savitzky-Golay
-;; smoothing, SNIP baseline removal, and TIC normalization.
-;; Ripple does this in one call:
+;; The DRIAMS paper applies: square root transform, [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter)
+;; smoothing, [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal, and TIC normalization.
+;; [Ripple](https://clojurecivitas.github.io/ripple/) does this in one call:
 
 (def preprocessed
   (ripple/preprocess-spectrum-data

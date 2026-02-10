@@ -1,12 +1,12 @@
 ;; # ML Pipeline Walkthrough
 ;;
-;; This notebook demonstrates each stage of the MALDI-TOF AMR
+;; This notebook demonstrates each stage of the [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization) [AMR](https://en.wikipedia.org/wiki/Antimicrobial_resistance)
 ;; prediction pipeline, showing both direct (uncached) and cached
 ;; variants side by side.
 ;;
 ;; The [single prediction](single_prediction.html) notebook covers
 ;; the same pipeline more gently; here we focus on the caching
-;; pattern and how Pocket threads stages together.
+;; pattern and how [Pocket](https://github.com/scicloj/pocket) threads stages together.
 
 (ns amr-book.ml-pipeline-walkthrough
   (:require
@@ -120,7 +120,7 @@ example-params
 
 ;; ## Stage 4: Train Model
 ;;
-;; Trains XGBoost classifier on training set.
+;; Trains [XGBoost](https://xgboost.readthedocs.io/) classifier on training set.
 ;; Returns trained model map with keys like :model-data, :options, :feature-columns
 
 (def train-params
@@ -176,7 +176,7 @@ example-params
 
 ;; ## Stage 6: Measure Performance
 ;;
-;; Calculates ROCAUC and PRAUC metrics.
+;; Calculates [ROCAUC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) and [PRAUC](https://en.wikipedia.org/wiki/Precision_and_recall) metrics.
 ;; Returns map with :n-train, :n-test, :pri (prevalence), :PRAUC, :ROCAUC
 
 ;; Without caching:

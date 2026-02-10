@@ -132,9 +132,9 @@ scenario-results
 
 ;; ## Next steps
 ;;
-;; - Add more species (S. aureus, K. pneumoniae) and their antibiotics
+;; - Add more species ([*S. aureus*](https://en.wikipedia.org/wiki/Staphylococcus_aureus), [*K. pneumoniae*](https://en.wikipedia.org/wiki/Klebsiella_pneumoniae)) and their antibiotics
 ;; - Sweep over sites (A–D) and years (2015–2018)
-;; - Compare against the results reported by Weis et al.
+;; - Compare against the results reported by [Weis et al.](https://doi.org/10.1038/s41591-021-01619-9)
 ;;
 ;; The [full walkthrough](ml_pipeline_walkthrough.html) covers the
 ;; pipeline in more detail, showing both cached and uncached variants

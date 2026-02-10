@@ -1,8 +1,8 @@
 # scicloj.amr
 
-Antimicrobial resistance (AMR) prediction from MALDI-TOF mass spectra, reproducing the approach of [Weis et al. (2022)](https://doi.org/10.1038/s41591-021-01619-9) using the [DRIAMS dataset](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q).
+[Antimicrobial resistance](https://en.wikipedia.org/wiki/Antimicrobial_resistance) (AMR) prediction from [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization) mass spectra, reproducing the approach of [Weis et al. (2022)](https://doi.org/10.1038/s41591-021-01619-9) using the [DRIAMS dataset](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q).
 
-This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to XGBoost classification — making it convenient for researchers to explore, reproduce, and extend this line of work in Clojure.
+This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to [XGBoost](https://xgboost.readthedocs.io/) classification — making it convenient for researchers to explore, reproduce, and extend this line of work in [Clojure](https://clojure.org/).
 
 ## Companion Libraries
 
@@ -27,7 +27,7 @@ Download from the [Dryad repository](https://datadryad.org/stash/dataset/doi:10.
 └── DRIAMS-D/ ...
 ```
 
-We recommend gzipping the raw `.txt` files to save space (~60 GB → ~15 GB). tablecloth reads `.txt.gz` transparently.
+We recommend gzipping the raw `.txt` files to save space (~60 GB → ~15 GB). [tablecloth](https://scicloj.github.io/tablecloth/) reads `.txt.gz` transparently.
 
 ### 2. Configure the data path
 
@@ -49,7 +49,7 @@ Or edit `amr.edn` in the project root:
 clojure -M:nrepl-for-mcp
 ```
 
-This starts an nREPL server on port 7100.
+This starts an [nREPL](https://nrepl.org/) server on port 7100.
 
 ### 4. Render the notebooks
 
@@ -66,4 +66,4 @@ From the REPL:
 
 ---
 
-Part of the [scicloj](https://scicloj.github.io/) ecosystem for scientific computing in Clojure.
+Part of the [scicloj](https://scicloj.github.io/) ecosystem for scientific computing in [Clojure](https://clojure.org/).
