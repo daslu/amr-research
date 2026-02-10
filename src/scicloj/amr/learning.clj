@@ -33,7 +33,10 @@
                   tc/row-count
                   pos?)
       (-> filtered-cases-2
-          (tc/map-columns :ri antibiotic (complement #{"S"}))))))
+          (tc/map-columns :ri antibiotic (complement #{"S"}))
+          (tc/set-dataset-name
+           (format "raw-data [%s / %s / %s / %d]"
+                   species (name antibiotic) (name site) year))))))
 
 (comment
   (-> {:site :A
@@ -82,7 +85,8 @@
                        (filter #(re-matches #"x[0-9]*" (name %)))
                        sort
                        (cons :ri))))
-           (ds-mod/set-inference-target :ri))
+           (ds-mod/set-inference-target :ri)
+           (tc/set-dataset-name "ml-data"))
        (catch Exception e
          (log/warn e "prepare-ml-data failed")
          nil)))
@@ -144,7 +148,8 @@
     (some-> split-data
             pocket/maybe-deref
             :test
-            (ml/predict m))))
+            (ml/predict m)
+            (tc/set-dataset-name "predictions"))))
 
 (comment
   (let [split-data (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
