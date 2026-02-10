@@ -1,0 +1,344 @@
+;; # Data Preparation
+;;
+;; Before we can train a classifier, each raw
+;; [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization)
+;; spectrum must be preprocessed and converted into a
+;; fixed-length feature vector.
+;;
+;; This notebook walks through every step of that
+;; transformation for **one spectrum**, then shows how
+;; the full dataset is assembled for machine learning.
+
+(ns amr-book.data-preparation
+  (:require
+   ;; AMR ML pipeline (prepare, train, predict, measure):
+   [scicloj.amr.learning :as learning]
+   ;; AMR data loading utilities:
+   [scicloj.amr.data.ingestion :as ingestion]
+   ;; Bacterial species definitions and antibiotic lists:
+   [scicloj.amr.data.bacteria :as bacteria]
+   ;; Ripple MALDI signal processing (https://scicloj.github.io/ripple):
+   [scicloj.ripple.maldi :as ripple]
+   ;; Table processing (https://scicloj.github.io/tablecloth/):
+   [tablecloth.api :as tc]
+   ;; Interactive plotting via Plotly (https://scicloj.github.io/tableplot/):
+   [scicloj.tableplot.v1.plotly :as plotly]
+   ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
+   [scicloj.kindly.v4.kind :as kind]))
+
+;; ## Choosing a scenario
+;;
+;; We pick a single species / antibiotic / site / year
+;; combination — **[*E. coli*](https://en.wikipedia.org/wiki/Escherichia_coli)
+;; vs [Cefepime](https://en.wikipedia.org/wiki/Cefepime)**
+;; from DRIAMS-A 2018:
+
+(def params
+  {:site :A
+   :year 2018
+   :species bacteria/E-coli
+   :antibiotic :Cefepime})
+
+;; `prepare-raw-data` loads the DRIAMS metadata, joins it
+;; with available spectrum files, and filters to our scenario.
+;; The result has a `:path` column (spectrum file) and a
+;; `:ri` column (true = resistant or intermediate).
+
+(def raw-data
+  (learning/prepare-raw-data params))
+
+(tc/row-count raw-data)
+
+(tc/head (tc/select-columns raw-data [:code :species :ri :path]) 5)
+
+;; ### Resistance distribution
+;;
+;; How many spectra are resistant vs susceptible?
+
+(def resistance-counts
+  (-> raw-data
+      (tc/group-by [:ri])
+      (tc/aggregate {:count tc/row-count})))
+
+resistance-counts
+
+(-> resistance-counts
+    (tc/map-columns :label [:ri] #(if % "Resistant/Intermediate" "Susceptible"))
+    (plotly/base {:=x :label
+                  :=y :count
+                  :=title "Resistance distribution — E. coli / Cefepime"
+                  :=x-title ""
+                  :=y-title "Number of spectra"})
+    (plotly/layer-bar)
+    plotly/plot)
+
+;; ## Loading a single raw spectrum
+;;
+;; Each spectrum is a gzipped text file with space-separated
+;; mass/intensity pairs. Let's pick the first one:
+
+(def spectrum-path
+  (-> raw-data :path first))
+
+(def raw-spectrum
+  (ingestion/load-raw-spectrum spectrum-path))
+
+raw-spectrum
+
+{:points (tc/row-count raw-spectrum)
+ :mass-min (-> raw-spectrum :mass first)
+ :mass-max (-> raw-spectrum :mass last)}
+
+(-> raw-spectrum
+    (plotly/base {:=x :mass
+                  :=y :intensity
+                  :=title "Raw spectrum"
+                  :=x-title "m/z (Da)"
+                  :=y-title "Intensity (a.u.)"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ## Step-by-step preprocessing
+;;
+;; The [DRIAMS paper](https://doi.org/10.1038/s41591-021-01619-9)
+;; applies four preprocessing steps, implemented by
+;; [Ripple](https://scicloj.github.io/ripple):
+;;
+;; 1. Square root transform (variance stabilization)
+;; 2. [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) smoothing
+;; 3. [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal
+;; 4. TIC normalization (total area → 1.0)
+;;
+;; We apply each one separately so we can see its effect.
+
+;; ### Step 1 — Square root transform
+;;
+;; Taking the square root compresses the dynamic range,
+;; giving lower-intensity peaks more weight relative to
+;; dominant ones.
+
+(def masses (:mass raw-spectrum))
+(def raw-intensities (:intensity raw-spectrum))
+
+(def sqrt-intensities
+  (ripple/sqrt-transform raw-intensities))
+
+(-> (tc/dataset {:mass masses :intensity sqrt-intensities})
+    (plotly/base {:=x :mass
+                  :=y :intensity
+                  :=title "After square root transform"
+                  :=x-title "m/z (Da)"
+                  :=y-title "√Intensity"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ### Step 2 — Savitzky-Golay smoothing
+;;
+;; A polynomial fit in a sliding window removes
+;; high-frequency noise while preserving peak shapes.
+;; We use a window of 11 points and polynomial order 2
+;; (the DRIAMS defaults).
+
+(def smoothed-intensities
+  (ripple/savitzky-golay-smooth sqrt-intensities
+                                {:window-size 11
+                                 :polynomial-order 2}))
+
+(-> (tc/dataset {:mass masses
+                 :sqrt sqrt-intensities
+                 :smoothed smoothed-intensities})
+    (tc/pivot->longer [:sqrt :smoothed]
+                      {:target-columns :step
+                       :value-column-name :intensity})
+    (plotly/base {:=x :mass
+                  :=y :intensity
+                  :=color :step
+                  :=title "Smoothing effect (zoom in to see detail)"
+                  :=x-title "m/z (Da)"
+                  :=y-title "Intensity"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ### Step 3 — SNIP baseline removal
+;;
+;; The [SNIP algorithm](https://doi.org/10.1016/0168-583X(88)90063-8)
+;; estimates and subtracts the slowly varying baseline
+;; caused by chemical matrix effects.
+
+(def baseline-corrected
+  (ripple/snip-baseline-removal smoothed-intensities
+                                {:iterations 20}))
+
+(-> (tc/dataset {:mass masses
+                 :smoothed smoothed-intensities
+                 :baseline-corrected baseline-corrected})
+    (tc/pivot->longer [:smoothed :baseline-corrected]
+                      {:target-columns :step
+                       :value-column-name :intensity})
+    (plotly/base {:=x :mass
+                  :=y :intensity
+                  :=color :step
+                  :=title "Before and after baseline removal"
+                  :=x-title "m/z (Da)"
+                  :=y-title "Intensity"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ### Step 4 — TIC normalization
+;;
+;; [Total Ion Current](https://en.wikipedia.org/wiki/Total_ion_current)
+;; normalization scales the spectrum so its area
+;; (by the [trapezoidal rule](https://en.wikipedia.org/wiki/Trapezoidal_rule))
+;; equals 1.0. This makes spectra from different
+;; measurements comparable.
+
+(def normalized-intensities
+  (ripple/tic-normalize masses baseline-corrected
+                        {:target-area 1.0}))
+
+(-> (tc/dataset {:mass masses :intensity normalized-intensities})
+    (plotly/base {:=x :mass
+                  :=y :intensity
+                  :=title "After TIC normalization"
+                  :=x-title "m/z (Da)"
+                  :=y-title "Intensity (normalized)"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ### Verification
+;;
+;; Ripple's `preprocess-spectrum-data` applies all four steps
+;; in one call. Let's confirm our step-by-step result matches:
+
+(def preprocessed
+  (ripple/preprocess-spectrum-data raw-spectrum {}))
+
+(def max-diff
+  (-> (map - normalized-intensities (:intensity preprocessed))
+      (->> (map abs))
+      (->> (reduce max))))
+
+max-diff
+
+(kind/test-last
+ #(< % 1e-10))
+
+;; ## Trimming and binning
+;;
+;; For machine learning we need a fixed-length feature vector.
+;; The DRIAMS protocol trims to [2000, 20000] Da and bins
+;; into 3 Da wide bins, producing 6,000 features.
+
+;; ### Trimming
+
+(def trimmed
+  (ripple/trim-spectrum preprocessed {:range [2000 20000]}))
+
+{:points-before (tc/row-count preprocessed)
+ :points-after (tc/row-count trimmed)}
+
+(-> trimmed
+    (plotly/base {:=x :mass
+                  :=y :intensity
+                  :=title "Preprocessed spectrum (trimmed to 2000–20000 Da)"
+                  :=x-title "m/z (Da)"
+                  :=y-title "Intensity (normalized)"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ### Binning
+
+(def binned
+  (ripple/bin-spectrum preprocessed {:range [2000 20000] :step 3}))
+
+(count binned)
+
+(kind/test-last
+ #(= % 6000))
+
+;; Each value is the mean intensity in one 3 Da bin.
+;; Here are the first few:
+
+(vec (take 10 binned))
+
+;; Visualized as a line chart (bin index on the x-axis):
+
+(-> (tc/dataset {:bin (range (count binned))
+                 :intensity (vec binned)})
+    (plotly/base {:=x :bin
+                  :=y :intensity
+                  :=title "Binned feature vector (6000 features)"
+                  :=x-title "Bin index"
+                  :=y-title "Mean intensity"})
+    (plotly/layer-line)
+    plotly/plot)
+
+;; ## Processing all spectra
+;;
+;; `learning/prepare-ml-data` applies preprocessing and
+;; binning to every spectrum in the dataset, producing
+;; a table with one row per spectrum and 6,000 feature
+;; columns (`:x0` through `:x5999`) plus the `:ri` target.
+
+(def ml-params
+  {:preprocessing-params {}
+   :binning-params {:range [2000 20000] :step 3}})
+
+(def ml-data
+  (learning/prepare-ml-data raw-data ml-params))
+
+{:rows (tc/row-count ml-data)
+ :columns (count (tc/column-names ml-data))}
+
+;; The first few columns:
+
+(-> ml-data
+    (tc/select-columns (into [:ri] (map #(keyword (str "x" %)) (range 5))))
+    (tc/head 5))
+
+;; ### A few spectra overlaid
+;;
+;; Plotting the binned features for the first five spectra
+;; shows the typical variation across samples:
+
+(def n-overlay 5)
+
+(def overlay-data
+  (let [bins (range 6000)]
+    (->> (range n-overlay)
+         (mapcat (fn [i]
+                   (let [row (-> ml-data (tc/select-rows [i]))]
+                     (map (fn [b]
+                            {:bin b
+                             :intensity (first (row (keyword (str "x" b))))
+                             :spectrum (str "spectrum-" i)})
+                          bins))))
+         tc/dataset)))
+
+(-> overlay-data
+    (plotly/base {:=x :bin
+                  :=y :intensity
+                  :=color :spectrum
+                  :=title "Binned features — first 5 spectra"
+                  :=x-title "Bin index"
+                  :=y-title "Mean intensity"})
+    (plotly/layer-line {:=mark-opacity 0.5})
+    plotly/plot)
+
+;; ## Train/test split
+;;
+;; As a final check, we split the dataset and verify
+;; it is ready for modeling:
+
+(def split-data
+  (learning/split ml-data {:seed 1}))
+
+{:train (tc/row-count (:train split-data))
+ :test (tc/row-count (:test split-data))}
+
+(kind/test-last
+ #(and (> (:train %) 0) (> (:test %) 0)))
+
+;; The dataset is ready. Each row is a preprocessed,
+;; binned MALDI spectrum with a resistance label —
+;; exactly what the classifier needs.
