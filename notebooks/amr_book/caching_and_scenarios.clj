@@ -46,7 +46,7 @@
                      ((pocket/caching-fn #'learning/prepare-raw-data)))
         ml-data (-> raw-data
                     ((pocket/caching-fn #'learning/prepare-ml-data)
-                     {:preprocessing-params {}
+                     {:preprocessing-params {:smooth-window 21}
                       :binning-params {:range [2000 20000] :step 3}}))
         split-data (-> ml-data
                        ((pocket/caching-fn #'learning/split) {:seed 1}))

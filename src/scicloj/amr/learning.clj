@@ -96,7 +96,7 @@
                                                :year 2018
                                                :species bacteria/E-coli
                                                :antibiotic :Cefepime})
-      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {}
+      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21}
                                               :binning-params {:range [2000 20000]
                                                                :step 3}})
       deref
@@ -114,7 +114,7 @@
                                                :year 2018
                                                :species bacteria/E-coli
                                                :antibiotic :Cefepime})
-      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {}
+      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21}
                                               :binning-params {:range [2000 20000]
                                                                :step 3}})
       ((pocket/caching-fn #'split) {:seed 1})
@@ -132,7 +132,7 @@
                                                :year 2018
                                                :species bacteria/E-coli
                                                :antibiotic :Cefepime})
-      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {}
+      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21}
                                               :binning-params {:range [2000 20000]
                                                                :step 3}})
       ((pocket/caching-fn #'split) {:seed 1})
@@ -156,7 +156,7 @@
                                                                 :year 2018
                                                                 :species bacteria/E-coli
                                                                 :antibiotic :Cefepime})
-                       ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {}
+                       ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21}
                                                                :binning-params {:range [2000 20000]
                                                                                 :step 3}})
                        ((pocket/caching-fn #'split) {:seed 1}))
@@ -190,7 +190,7 @@
                                                                 :year 2018
                                                                 :species bacteria/E-coli
                                                                 :antibiotic :Cefepime})
-                       ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {}
+                       ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21}
                                                                :binning-params {:range [2000 20000]
                                                                                 :step 3}})
                        ((pocket/caching-fn #'split) {:seed 1}))

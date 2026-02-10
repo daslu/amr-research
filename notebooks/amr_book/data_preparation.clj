@@ -132,8 +132,8 @@ raw-spectrum
 ;; [Ripple](https://scicloj.github.io/ripple):
 ;;
 ;; 1. Square root transform (variance stabilization)
-;; 2. [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) smoothing
-;; 3. [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal
+;; 2. [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) smoothing (half-window-size 10)
+;; 3. [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal (20 iterations)
 ;; 4. TIC normalization (total area → 1.0)
 ;;
 ;; We apply each one separately so we can see its effect.
@@ -163,12 +163,12 @@ raw-spectrum
 ;;
 ;; A polynomial fit in a sliding window removes
 ;; high-frequency noise while preserving peak shapes.
-;; We use a window of 11 points and polynomial order 2
-;; (the DRIAMS defaults).
+;; The paper uses half-window-size 10 (= full window of
+;; 21 points) with polynomial order 2.
 
 (def smoothed-intensities
   (ripple/savitzky-golay-smooth sqrt-intensities
-                                {:window-size 11
+                                {:window-size 21
                                  :polynomial-order 2}))
 
 (-> (tc/dataset {:mass masses
@@ -237,8 +237,11 @@ raw-spectrum
 ;; Ripple's `preprocess-spectrum-data` applies all four steps
 ;; in one call. Let's confirm our step-by-step result matches:
 
+(def preprocessing-params
+  {:smooth-window 21})
+
 (def preprocessed
-  (ripple/preprocess-spectrum-data raw-spectrum {}))
+  (ripple/preprocess-spectrum-data raw-spectrum preprocessing-params))
 
 (def max-diff
   (-> (map - normalized-intensities (:intensity preprocessed))
@@ -274,6 +277,10 @@ max-diff
     plotly/plot)
 
 ;; ### Binning
+;;
+;; The m/z axis is partitioned into 3 Da bins and the
+;; intensities falling into each bin are **summed**,
+;; producing a vector of 6,000 features.
 
 (def binned
   (ripple/bin-spectrum preprocessed {:range [2000 20000] :step 3}))
@@ -283,8 +290,7 @@ max-diff
 (kind/test-last
  #(= % 6000))
 
-;; Each value is the mean intensity in one 3 Da bin.
-;; Here are the first few:
+;; Here are the first few values:
 
 (vec (take 10 binned))
 
@@ -296,7 +302,7 @@ max-diff
                   :=y :intensity
                   :=title "Binned feature vector (6000 features)"
                   :=x-title "Bin index"
-                  :=y-title "Mean intensity"})
+                  :=y-title "Summed intensity"})
     (plotly/layer-line)
     plotly/plot)
 
@@ -308,7 +314,7 @@ max-diff
 ;; columns (`:x0` through `:x5999`) plus the `:ri` target.
 
 (def ml-params
-  {:preprocessing-params {}
+  {:preprocessing-params preprocessing-params
    :binning-params {:range [2000 20000] :step 3}})
 
 (def ml-data
@@ -348,7 +354,7 @@ max-diff
                   :=color :spectrum
                   :=title "Binned features — first 5 spectra"
                   :=x-title "Bin index"
-                  :=y-title "Mean intensity"})
+                  :=y-title "Summed intensity"})
     (plotly/layer-line {:=mark-opacity 0.5})
     plotly/plot)
 

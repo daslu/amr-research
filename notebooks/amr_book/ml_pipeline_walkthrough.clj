@@ -66,7 +66,7 @@ example-params
 ;; Transforms the dataset to have :ri (resistance indicator) and feature columns :x0, :x1, ... :x5999
 
 (def ml-params
-  {:preprocessing-params {}
+  {:preprocessing-params {:smooth-window 21}
    :binning-params {:range [2000 20000]
                     :step 3}})
 

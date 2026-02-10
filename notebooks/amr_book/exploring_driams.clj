@@ -140,7 +140,7 @@ raw-spectrum
   (ripple/preprocess-spectrum-data
    raw-spectrum
    {:should-sqrt-transform true
-    :smooth-window 11
+    :smooth-window 21
     :baseline-iterations 20
     :should-tic-normalize true}))
 
@@ -169,7 +169,7 @@ raw-spectrum
 (kind/test-last
  #(= % 6000))
 
-;; Each value is the mean intensity in that 3 Da bin.
+;; Each value is the summed intensity in that 3 Da bin.
 ;; This is the representation fed to the classifier.
 
 ;; ## References
