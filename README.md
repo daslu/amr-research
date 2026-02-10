@@ -20,7 +20,7 @@ Download from the [Dryad repository](https://datadryad.org/stash/dataset/doi:10.
 └── DRIAMS-D/ ...
 ```
 
-We recommend gzipping the raw `.txt` files to save space (~60 GB → ~15 GB). [tablecloth](https://scicloj.github.io/tablecloth/) reads `.txt.gz` transparently.
+We recommend gzipping the raw `.txt` files to save space. [tablecloth](https://scicloj.github.io/tablecloth/) reads `.txt.gz` transparently.
 
 ### 2. Configure the data path
 
