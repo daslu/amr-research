@@ -14,7 +14,6 @@
             [tablecloth.column.api :as tcc])
   (:import (org.tribuo.classification.evaluation LabelEvaluationUtil)))
 
-
 (def species->antibiotics
   (-> {bacteria/E-coli ["Meropenem"
                         "Ertapenem"
@@ -41,20 +40,18 @@
                               "Tobramycin"]}
       (update-vals (partial map keyword))))
 
-
-
 (defonce eval-scenario
   (memoize
    (fn [{:as scenario
          :keys [binning-step
                 xgboost-rounds]}]
-     (let [ml-data (-> ((pocket/caching-fn #'learning/prepare-raw-data) (:case scenario))
-                       ((pocket/caching-fn #'learning/prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-                                                                        :binning-params {:range [2000 20000]
-                                                                                         :step binning-step}}))]
+     (let [ml-data (-> (learning/prepare-raw-data-cached (:case scenario))
+                       (learning/prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+                                                         :binning-params {:range [2000 20000]
+                                                                          :step binning-step}}))]
        (when @ml-data
          (let [split-data (-> ml-data
-                              ((pocket/caching-fn #'learning/split) {:seed 1})
+                              (learning/split-cached {:seed 1})
                               pocket/maybe-deref)
                {:keys [train test]} split-data
                model (pocket/cached #'learning/train split-data {:model-type :xgboost/classification
@@ -95,8 +92,6 @@
         (tc/order-by [:n-test])
         (ds-print/print-range :all))))
 
-
-
 (comment
   (-> @summary
       (tc/select-columns [:species :antibiotic
@@ -110,7 +105,6 @@
       (tc/order-by [:species :antibiotic :site :year])
       (tc/write-csv! "scenarios-draft-20260122.csv")
       time))
-
 
 (def break
   (kind/hiccup
@@ -131,7 +125,7 @@
       :to-measure
       ((fn [tm]
          [(kind/table (update-vals case vector))
-          (kind/table 
+          (kind/table
            {"actual resistance probability"
             [(format "%.02f%%" (-> tm :ri tcc/mean (* 100)))]
             "predictor AUC"
@@ -184,9 +178,8 @@
               plotly/layer-point
               adjust-layout)
           break]))
-      
-      kind/fragment))
 
+      kind/fragment))
 
 (->> (for [[species antibiotics] species->antibiotics
            antibiotic antibiotics

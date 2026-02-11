@@ -43,7 +43,7 @@
        :year 2018
        :species bacteria/E-coli
        :antibiotic :Cefepime}
-      ((pocket/caching-fn #'prepare-raw-data))
+      (prepare-raw-data-cached)
       deref
       time))
 
@@ -92,13 +92,13 @@
          nil)))
 
 (comment
-  (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
-                                               :year 2018
-                                               :species bacteria/E-coli
-                                               :antibiotic :Cefepime})
-      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-                                              :binning-params {:range [2000 20000]
-                                                               :step 3}})
+  (-> (prepare-raw-data-cached {:site :A
+                                :year 2018
+                                :species bacteria/E-coli
+                                :antibiotic :Cefepime})
+      (prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+                               :binning-params {:range [2000 20000]
+                                                :step 3}})
       deref
       time))
 
@@ -110,14 +110,14 @@
           first))))
 
 (comment
-  (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
-                                               :year 2018
-                                               :species bacteria/E-coli
-                                               :antibiotic :Cefepime})
-      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-                                              :binning-params {:range [2000 20000]
-                                                               :step 3}})
-      ((pocket/caching-fn #'split) {:seed 1})
+  (-> (prepare-raw-data-cached {:site :A
+                                :year 2018
+                                :species bacteria/E-coli
+                                :antibiotic :Cefepime})
+      (prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+                               :binning-params {:range [2000 20000]
+                                                :step 3}})
+      (split-cached {:seed 1})
       deref
       time))
 
@@ -128,17 +128,17 @@
           (ml/train hyper)))
 
 (comment
-  (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
-                                               :year 2018
-                                               :species bacteria/E-coli
-                                               :antibiotic :Cefepime})
-      ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-                                              :binning-params {:range [2000 20000]
-                                                               :step 3}})
-      ((pocket/caching-fn #'split) {:seed 1})
-      ((pocket/caching-fn #'train) {:model-type :xgboost/classification
-                                    :round 50
-                                    :num-class 2})
+  (-> (prepare-raw-data-cached {:site :A
+                                :year 2018
+                                :species bacteria/E-coli
+                                :antibiotic :Cefepime})
+      (prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+                               :binning-params {:range [2000 20000]
+                                                :step 3}})
+      (split-cached {:seed 1})
+      (train-cached {:model-type :xgboost/classification
+                     :round 50
+                     :num-class 2})
       deref
       time))
 
@@ -152,20 +152,20 @@
             (tc/set-dataset-name "predictions"))))
 
 (comment
-  (let [split-data (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
-                                                                :year 2018
-                                                                :species bacteria/E-coli
-                                                                :antibiotic :Cefepime})
-                       ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-                                                               :binning-params {:range [2000 20000]
-                                                                                :step 3}})
-                       ((pocket/caching-fn #'split) {:seed 1}))
+  (let [split-data (-> (prepare-raw-data-cached {:site :A
+                                                 :year 2018
+                                                 :species bacteria/E-coli
+                                                 :antibiotic :Cefepime})
+                       (prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+                                                :binning-params {:range [2000 20000]
+                                                                 :step 3}})
+                       (split-cached {:seed 1}))
         model (-> split-data
-                  ((pocket/caching-fn #'train) {:model-type :xgboost/classification
-                                                :round 50
-                                                :num-class 2}))]
+                  (train-cached {:model-type :xgboost/classification
+                                 :round 50
+                                 :num-class 2}))]
     (->> model
-         ((pocket/caching-fn #'predict) split-data)
+         (predict-cached split-data)
          deref
          time)))
 
@@ -185,21 +185,33 @@
                 (boolean-array (to-measure :ri))
                 (double-array (to-measure 1)))})))
 
+;; ## Named caching functions
+;;
+;; Pre-built cached wrappers for each pipeline stage.
+;; Use these instead of calling `(pocket/caching-fn #'...)` inline.
+
+(def prepare-raw-data-cached (pocket/caching-fn #'prepare-raw-data))
+(def prepare-ml-data-cached (pocket/caching-fn #'prepare-ml-data))
+(def split-cached (pocket/caching-fn #'split))
+(def train-cached (pocket/caching-fn #'train))
+(def predict-cached (pocket/caching-fn #'predict))
+(def measure-cached (pocket/caching-fn #'measure))
+
 (comment
-  (let [split-data (-> ((pocket/caching-fn #'prepare-raw-data) {:site :A
-                                                                :year 2018
-                                                                :species bacteria/E-coli
-                                                                :antibiotic :Cefepime})
-                       ((pocket/caching-fn #'prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-                                                               :binning-params {:range [2000 20000]
-                                                                                :step 3}})
-                       ((pocket/caching-fn #'split) {:seed 1}))
+  (let [split-data (-> (prepare-raw-data-cached {:site :A
+                                                 :year 2018
+                                                 :species bacteria/E-coli
+                                                 :antibiotic :Cefepime})
+                       (prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+                                                :binning-params {:range [2000 20000]
+                                                                 :step 3}})
+                       (split-cached {:seed 1}))
         model (-> split-data
-                  ((pocket/caching-fn #'train) {:model-type :xgboost/classification
-                                                :round 50
-                                                :num-class 2}))]
+                  (train-cached {:model-type :xgboost/classification
+                                 :round 50
+                                 :num-class 2}))]
     (->> model
-         ((pocket/caching-fn #'predict) split-data)
-         ((pocket/caching-fn #'measure) split-data)
+         (predict-cached split-data)
+         (measure-cached split-data)
          deref
          time)))

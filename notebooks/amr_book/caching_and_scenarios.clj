@@ -18,8 +18,6 @@
    [scicloj.amr.learning :as learning]
    ;; Bacterial species definitions and antibiotic lists:
    [scicloj.amr.data.bacteria :as bacteria]
-   ;; Filesystem-based caching (https://github.com/scicloj/pocket):
-   [scicloj.pocket :as pocket]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
    ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
@@ -27,13 +25,12 @@
 
 ;; ## The caching pattern
 ;;
-;; `pocket/caching-fn` wraps a var so that its return value
-;; is cached on disk (keyed by function identity + arguments).
-;; The wrapped function returns a `Cached` object — an `IDeref`
-;; that triggers computation (or loads from cache) on `deref`.
-;;
-;; **Important:** always pass a **var** (`#'fn-name`), not the
-;; function value. Vars have stable identity; function objects don't.
+;; [Pocket](https://github.com/scicloj/pocket) caches each pipeline
+;; stage's output on disk, keyed by function identity + arguments.
+;; `learning.clj` defines named cached wrappers (e.g.
+;; `learning/prepare-raw-data-cached`) built with `pocket/caching-fn`.
+;; Each returns a `Cached` object — an `IDeref` that triggers
+;; computation (or loads from cache) on `deref`.
 
 ;; Here is the full cached pipeline for one scenario:
 
@@ -43,22 +40,22 @@
   [{:keys [site year species antibiotic]}]
   (let [raw-data (-> {:site site :year year
                       :species species :antibiotic antibiotic}
-                     ((pocket/caching-fn #'learning/prepare-raw-data)))
+                     (learning/prepare-raw-data-cached))
         ml-data (-> raw-data
-                    ((pocket/caching-fn #'learning/prepare-ml-data)
+                    (learning/prepare-ml-data-cached
                      {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
                       :binning-params {:range [2000 20000] :step 3}}))
         split-data (-> ml-data
-                       ((pocket/caching-fn #'learning/split) {:seed 1}))
+                       (learning/split-cached {:seed 1}))
         model (-> split-data
-                  ((pocket/caching-fn #'learning/train)
+                  (learning/train-cached
                    {:model-type :xgboost/classification
                     :round 50
                     :num-class 2}))
         predictions (-> split-data
-                        ((pocket/caching-fn #'learning/predict) model))
+                        (learning/predict-cached model))
         metrics (-> split-data
-                    ((pocket/caching-fn #'learning/measure) predictions)
+                    (learning/measure-cached predictions)
                     deref)]
     metrics))
 

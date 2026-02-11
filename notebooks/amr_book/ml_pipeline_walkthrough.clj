@@ -10,8 +10,6 @@
   (:require
    ;; AMR ML pipeline (prepare, train, predict, measure):
    [scicloj.amr.learning :as learning]
-   ;; Filesystem-based caching (https://github.com/scicloj/pocket):
-   [scicloj.pocket :as pocket]
    ;; AMR data loading utilities:
    [scicloj.amr.data.ingestion :as ingestion]
    ;; Bacterial species definitions and antibiotic lists:
@@ -54,7 +52,7 @@ example-params
 ;; With caching:
 (def raw-data-cached
   (-> example-params
-      ((pocket/caching-fn #'learning/prepare-raw-data))
+      (learning/prepare-raw-data-cached)
       deref))
 
 [(tc/row-count raw-data-cached)
@@ -80,8 +78,8 @@ example-params
 ;; With caching:
 (def ml-data-cached
   (-> example-params
-      ((pocket/caching-fn #'learning/prepare-raw-data))
-      ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
+      (learning/prepare-raw-data-cached)
+      (learning/prepare-ml-data-cached ml-params)
       deref))
 
 [(tc/row-count ml-data-cached)
@@ -107,9 +105,9 @@ example-params
 ;; With caching:
 (def split-data-cached
   (-> example-params
-      ((pocket/caching-fn #'learning/prepare-raw-data))
-      ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
-      ((pocket/caching-fn #'learning/split) split-params)
+      (learning/prepare-raw-data-cached)
+      (learning/prepare-ml-data-cached ml-params)
+      (learning/split-cached split-params)
       deref))
 
 [(keys split-data-cached)
@@ -135,10 +133,10 @@ example-params
 ;; With caching:
 (def model-cached
   (-> example-params
-      ((pocket/caching-fn #'learning/prepare-raw-data))
-      ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
-      ((pocket/caching-fn #'learning/split) split-params)
-      ((pocket/caching-fn #'learning/train) train-params)
+      (learning/prepare-raw-data-cached)
+      (learning/prepare-ml-data-cached ml-params)
+      (learning/split-cached split-params)
+      (learning/train-cached train-params)
       deref))
 
 (keys model-cached)
@@ -160,13 +158,13 @@ example-params
 ;; With caching:
 (def predictions-cached
   (let [split-data (-> example-params
-                       ((pocket/caching-fn #'learning/prepare-raw-data))
-                       ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
-                       ((pocket/caching-fn #'learning/split) split-params))
+                       (learning/prepare-raw-data-cached)
+                       (learning/prepare-ml-data-cached ml-params)
+                       (learning/split-cached split-params))
         model (-> split-data
-                  ((pocket/caching-fn #'learning/train) train-params))]
+                  (learning/train-cached train-params))]
     (-> split-data
-        ((pocket/caching-fn #'learning/predict) model)
+        (learning/predict-cached model)
         deref)))
 
 [(tc/row-count predictions-cached)
@@ -186,15 +184,15 @@ metrics-no-cache
 ;; With caching:
 (def metrics-cached
   (let [split-data (-> example-params
-                       ((pocket/caching-fn #'learning/prepare-raw-data))
-                       ((pocket/caching-fn #'learning/prepare-ml-data) ml-params)
-                       ((pocket/caching-fn #'learning/split) split-params))
+                       (learning/prepare-raw-data-cached)
+                       (learning/prepare-ml-data-cached ml-params)
+                       (learning/split-cached split-params))
         model (-> split-data
-                  ((pocket/caching-fn #'learning/train) train-params))
+                  (learning/train-cached train-params))
         predictions (-> split-data
-                        ((pocket/caching-fn #'learning/predict) model))]
+                        (learning/predict-cached model))]
     (-> split-data
-        ((pocket/caching-fn #'learning/measure) predictions)
+        (learning/measure-cached predictions)
         deref)))
 
 metrics-cached
@@ -223,10 +221,10 @@ metrics-cached
 ;; Notice the threading pattern in the cached version:
 ;; ```clojure
 ;; (-> params
-;;     ((pocket/caching-fn #'fn1))
-;;     ((pocket/caching-fn #'fn2) params2)
+;;     (learning/prepare-raw-data-cached)
+;;     (learning/prepare-ml-data-cached ml-params)
 ;;     deref)
 ;; ```
 ;;
-;; Each function returns a delay/future that gets passed to the next stage,
-;; and `deref` forces evaluation at the end.
+;; Each cached function returns a `Cached` (an `IDeref`) that gets
+;; passed to the next stage. `deref` forces evaluation at the end.
