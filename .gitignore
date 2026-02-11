@@ -1,2 +1,5 @@
 .cpcache/
 .nrepl-port
+docs/*.qmd
+.cache
+.clay-temp
