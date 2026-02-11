@@ -4,7 +4,17 @@
     "href": "index.html",
     "title": "AMR",
     "section": "",
-    "text": "1 Preface\nAntimicrobial resistance (AMR) prediction from MALDI-TOF mass spectra, reproducing the approach of Weis et al. (2022) using the DRIAMS dataset.\nThis project provides well-explained notebooks that walk through the full pipeline — from raw spectra to XGBoost classification — making it convenient for researchers to explore, reproduce, and extend this line of work in Clojure.",
+    "text": "1 Preface\nPredict antimicrobial resistance (AMR) directly from MALDI-TOF mass spectra using machine learning — a Clojure reproduction of Weis et al. (2022) using the DRIAMS dataset.\nThis project provides notebooks that walk through the full pipeline — from raw spectra to XGBoost classification — making it convenient for researchers to explore, reproduce, and extend this line of work.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
+    ]
+  },
+  {
+    "objectID": "index.html#status",
+    "href": "index.html#status",
+    "title": "AMR",
+    "section": "Status",
+    "text": "Status\n\nPreprocessing pipeline — ready and tested\nMachine learning workflows — in progress\nAPI may change as the project evolves",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
     ]
@@ -14,7 +24,7 @@
     "href": "index.html#setup",
     "title": "AMR",
     "section": "Setup",
-    "text": "Setup\n\n1. Get the DRIAMS dataset\nDownload from the Dryad repository and extract so site folders are under a single directory. You may remove the preprocessing subdirectories:\n/path/to/DRIAMS/\n├── DRIAMS-A/\n│   ├── raw/2015/  raw/2016/  raw/2017/  raw/2018/\n│   └── id/2015/   id/2016/   id/2017/   id/2018/\n├── DRIAMS-B/ ...\n├── DRIAMS-C/ ...\n└── DRIAMS-D/ ...\nWe recommend gzipping the raw .txt files to save space. tablecloth reads .txt.gz transparently.\n\n\n2. Configure the data path\nEither set the environment variable:\nexport DRIAMS_BASE_DIR=/path/to/DRIAMS/\nOr edit amr.edn in the project root:\n{:base-dir \"/path/to/DRIAMS/\"}\n\n\n3. Render the notebooks\nFrom the Clojure REPL:\n(require '[dev])\n(dev/make-book!)",
+    "text": "Setup\n\n1. Get the DRIAMS dataset\nDownload from the Dryad repository and extract so site folders are under a single directory. You may remove the preprocessing subdirectories:\n/path/to/DRIAMS/\n├── DRIAMS-A/\n│   ├── raw/2015/  raw/2016/  raw/2017/  raw/2018/\n│   └── id/2015/   id/2016/   id/2017/   id/2018/\n├── DRIAMS-B/ ...\n├── DRIAMS-C/ ...\n└── DRIAMS-D/ ...\nWe recommend gzipping the raw .txt files to save space. tablecloth reads .txt.gz transparently.\n\n\n2. Configure the data path\nEither set the environment variable:\nexport DRIAMS_BASE_DIR=/path/to/DRIAMS/\nOr edit amr.edn in the project root:\n{:base-dir \"/path/to/DRIAMS/\"}\n\n\n3. Render the notebooks\nFrom the Clojure REPL:\n(require '[dev])\n(dev/make-book!)\nThis produces a Quarto book under docs/.",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
     ]
@@ -24,7 +34,7 @@
     "href": "index.html#key-libraries",
     "title": "AMR",
     "section": "Key Libraries",
-    "text": "Key Libraries\nThis project builds on the Scicloj ecosystem:\n\ntablecloth — dataframe library for tabular data manipulation (built on tech.ml.dataset and dtype-next)\nmetamorph.ml — machine learning pipelines (XGBoost classification in this project)\ntableplot — interactive plotting via Plotly\nRipple (scicloj.ripple.maldi) — MALDIquant-compatible signal preprocessing, binning, and peak detection\nPocket (scicloj.pocket) — filesystem-based caching for expensive computations\nfastmath — numerical and statistical functions\nKindly — annotation system for notebook visualizations (used with Clay for rendering)",
+    "text": "Key Libraries\nThis project builds on the Scicloj ecosystem for scientific computing in Clojure:\n\ntablecloth — dataframe library for tabular data manipulation (built on tech.ml.dataset and dtype-next)\nmetamorph.ml — machine learning pipelines (XGBoost classification in this project)\ntableplot — interactive plotting via Plotly\nRipple (scicloj.ripple.maldi) — MALDIquant-compatible signal preprocessing, binning, and peak detection\nPocket (scicloj.pocket) — filesystem-based caching for expensive computations\nfastmath — numerical and statistical functions\nKindly — annotation system for notebook visualizations (used with Clay for rendering)",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
     ]
@@ -34,7 +44,17 @@
     "href": "index.html#references",
     "title": "AMR",
     "section": "References",
-    "text": "References\n\nWeis, C., et al. (2022). Direct antimicrobial resistance prediction from clinical MALDI-TOF mass spectra using machine learning. Nature Medicine, 28, 164–174.\n\n\nPart of the scicloj ecosystem for scientific computing in Clojure.",
+    "text": "References\n\nWeis, C., et al. (2022). Direct antimicrobial resistance prediction from clinical MALDI-TOF mass spectra using machine learning. Nature Medicine, 28, 164–174.",
+    "crumbs": [
+      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
+    ]
+  },
+  {
+    "objectID": "index.html#links",
+    "href": "index.html#links",
+    "title": "AMR",
+    "section": "Links",
+    "text": "Links\n\nSource code\nWork-in-progress notes",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
     ]

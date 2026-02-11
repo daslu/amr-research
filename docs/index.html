@@ -242,6 +242,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface"><span class="header-section-number">1</span> Preface</a>
   <ul>
+  <li><a href="#status" id="toc-status" class="nav-link" data-scroll-target="#status">Status</a></li>
   <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a>
   <ul class="collapse">
   <li><a href="#get-the-driams-dataset" id="toc-get-the-driams-dataset" class="nav-link" data-scroll-target="#get-the-driams-dataset">1. Get the DRIAMS dataset</a></li>
@@ -250,6 +251,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#key-libraries" id="toc-key-libraries" class="nav-link" data-scroll-target="#key-libraries">Key Libraries</a></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  <li><a href="#links" id="toc-links" class="nav-link" data-scroll-target="#links">Links</a></li>
   <li><a href="#license" id="toc-license" class="nav-link" data-scroll-target="#license">License</a></li>
   <li><a href="#chapters-in-this-book" id="toc-chapters-in-this-book" class="nav-link" data-scroll-target="#chapters-in-this-book">Chapters in this book</a></li>
   </ul></li>
@@ -292,32 +294,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js" type="text/javascript"></script>
 <section id="preface" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Preface</h1>
-<p><a href="https://en.wikipedia.org/wiki/Antimicrobial_resistance">Antimicrobial resistance</a> (AMR) prediction from <a href="https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization">MALDI-TOF</a> mass spectra, reproducing the approach of <a href="https://doi.org/10.1038/s41591-021-01619-9">Weis et al.&nbsp;(2022)</a> using the <a href="https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q">DRIAMS dataset</a>.</p>
-<p>This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to <a href="https://xgboost.readthedocs.io/">XGBoost</a> classification — making it convenient for researchers to explore, reproduce, and extend this line of work in <a href="https://clojure.org/">Clojure</a>.</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 32%">
-<col style="width: 68%">
-</colgroup>
-<tbody>
-<tr class="odd">
-<td>Source</td>
-<td>https://github.com/daslu/amr-research</td>
-</tr>
-<tr class="even">
-<td>Work-in-progress notes</td>
-<td>https://daslu.github.io/amr-research/</td>
-</tr>
-<tr class="odd">
-<td>Status</td>
-<td>Preprocessing ready, ML workflow work-in-progress</td>
-</tr>
-<tr class="even">
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
+<p>Predict <a href="https://en.wikipedia.org/wiki/Antimicrobial_resistance">antimicrobial resistance</a> (AMR) directly from <a href="https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization">MALDI-TOF</a> mass spectra using machine learning — a <a href="https://clojure.org/">Clojure</a> reproduction of <a href="https://doi.org/10.1038/s41591-021-01619-9">Weis et al.&nbsp;(2022)</a> using the <a href="https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q">DRIAMS dataset</a>.</p>
+<p>This project provides notebooks that walk through the full pipeline — from raw spectra to <a href="https://xgboost.readthedocs.io/">XGBoost</a> classification — making it convenient for researchers to explore, reproduce, and extend this line of work.</p>
+<section id="status" class="level2">
+<h2 class="anchored" data-anchor-id="status">Status</h2>
+<ul>
+<li>Preprocessing pipeline — ready and tested</li>
+<li>Machine learning workflows — in progress</li>
+<li>API may change as the project evolves</li>
+</ul>
+</section>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <section id="get-the-driams-dataset" class="level3">
@@ -344,11 +330,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>From the Clojure REPL:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">require</span> '[dev])</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>(dev/make-book!)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This produces a <a href="https://quarto.org/">Quarto</a> book under <code>docs/</code>.</p>
 </section>
 </section>
 <section id="key-libraries" class="level2">
 <h2 class="anchored" data-anchor-id="key-libraries">Key Libraries</h2>
-<p>This project builds on the <a href="https://scicloj.github.io/">Scicloj</a> ecosystem:</p>
+<p>This project builds on the <a href="https://scicloj.github.io/">Scicloj</a> ecosystem for scientific computing in Clojure:</p>
 <ul>
 <li><strong><a href="https://scicloj.github.io/tablecloth/">tablecloth</a></strong> — dataframe library for tabular data manipulation (built on <a href="https://github.com/techascent/tech.ml.dataset">tech.ml.dataset</a> and <a href="https://github.com/cnuernber/dtype-next">dtype-next</a>)</li>
 <li><strong><a href="https://github.com/scicloj/metamorph.ml">metamorph.ml</a></strong> — machine learning pipelines (<a href="https://xgboost.readthedocs.io/">XGBoost</a> classification in this project)</li>
@@ -364,8 +351,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li>Weis, C., et al.&nbsp;(2022). <a href="https://doi.org/10.1038/s41591-021-01619-9">Direct antimicrobial resistance prediction from clinical MALDI-TOF mass spectra using machine learning</a>. <em>Nature Medicine</em>, 28, 164–174.</li>
 </ul>
-<hr>
-<p>Part of the <a href="https://scicloj.github.io/">scicloj</a> ecosystem for scientific computing in <a href="https://clojure.org/">Clojure</a>.</p>
+</section>
+<section id="links" class="level2">
+<h2 class="anchored" data-anchor-id="links">Links</h2>
+<ul>
+<li><a href="https://github.com/daslu/amr-research">Source code</a></li>
+<li><a href="https://daslu.github.io/amr-research">Work-in-progress notes</a></li>
+</ul>
 </section>
 <section id="license" class="level2">
 <h2 class="anchored" data-anchor-id="license">License</h2>
