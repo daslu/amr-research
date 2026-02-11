@@ -1,5 +1,6 @@
-{"Exploring the Data"   ["exploring_driams"
-                         "data_preparation"]
- "ML Pipeline"          ["single_prediction"
-                         "caching_and_scenarios"]
- "Full Walkthrough"     ["ml_pipeline_walkthrough"]}
+{"The DRIAMS Dataset"    ["exploring_driams"]
+ "Preprocessing"         ["preprocessing_explained"
+                          "preprocessing_driams"]
+ "Prediction Pipeline"   ["single_prediction"
+                          "caching_and_scenarios"]
+ "Full Walkthrough"      ["ml_pipeline_walkthrough"]}

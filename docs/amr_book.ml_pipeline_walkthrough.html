@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>6&nbsp; ML Pipeline Walkthrough – AMR</title>
+<title>7&nbsp; ML Pipeline Walkthrough – AMR</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -117,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -153,7 +153,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Exploring the Data</span></a>
+ <span class="menu-text">The DRIAMS Dataset</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -165,18 +165,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Exploring the DRIAMS Dataset</span></span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./amr_book.data_preparation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">ML Pipeline</span></a>
+ <span class="menu-text">Preprocessing</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -184,14 +178,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./amr_book.single_prediction.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span></a>
+  <a href="./amr_book.preprocessing_explained.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Preprocessing Explained</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./amr_book.caching_and_scenarios.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span></a>
+  <a href="./amr_book.preprocessing_driams.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></span></a>
   </div>
 </li>
       </ul>
@@ -199,7 +193,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Full Walkthrough</span></a>
+ <span class="menu-text">Prediction Pipeline</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -207,8 +201,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./amr_book.single_prediction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./amr_book.caching_and_scenarios.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Full Walkthrough</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./amr_book.ml_pipeline_walkthrough.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
   </div>
 </li>
       </ul>
@@ -241,9 +258,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></h1>
+<h1 class="title"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></h1>
 </div>
 
 
@@ -496,10 +513,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>[<span class="dv">467</span> (<span class="dv">0</span> <span class="dv">1</span> <span class="at">:ri</span>)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>(tc/head predictions-no-cache <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>predictions-no-cache</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-dataset">
-<p>predictions [5 3]:</p>
+<p>predictions [467 3]:</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -532,6 +549,91 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td style="text-align: right;">0.99845076</td>
 <td style="text-align: right;">0.00154921</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.98899591</td>
+<td style="text-align: right;">0.01100409</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99942422</td>
+<td style="text-align: right;">0.00057583</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.96482587</td>
+<td style="text-align: right;">0.03517414</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.96317244</td>
+<td style="text-align: right;">0.03682759</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99724787</td>
+<td style="text-align: right;">0.00275208</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">…</td>
+<td style="text-align: right;">…</td>
+<td>…</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99703884</td>
+<td style="text-align: right;">0.00296113</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99507070</td>
+<td style="text-align: right;">0.00492928</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99746776</td>
+<td style="text-align: right;">0.00253228</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.97992593</td>
+<td style="text-align: right;">0.02007401</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99858761</td>
+<td style="text-align: right;">0.00141242</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99593973</td>
+<td style="text-align: right;">0.00406027</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99854290</td>
+<td style="text-align: right;">0.00145710</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.93154901</td>
+<td style="text-align: right;">0.06845096</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.97795516</td>
+<td style="text-align: right;">0.02204488</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99875307</td>
+<td style="text-align: right;">0.00124687</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99760938</td>
+<td style="text-align: right;">0.00239061</td>
 <td>false</td>
 </tr>
 </tbody>
@@ -1042,7 +1144,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
       <a href="./amr_book.caching_and_scenarios.html" class="pagination-link" aria-label="Caching and Scenarios">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span>
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

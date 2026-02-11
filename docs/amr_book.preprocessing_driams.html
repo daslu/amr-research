@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>3&nbsp; Data Preparation – AMR</title>
+<title>4&nbsp; Preprocessing DRIAMS Spectra – AMR</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -66,7 +66,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./amr_book.single_prediction.html" rel="next">
-<link href="./amr_book.exploring_driams.html" rel="prev">
+<link href="./amr_book.preprocessing_explained.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
@@ -118,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.exploring_driams.html">Exploring the Data</a></li><li class="breadcrumb-item"><a href="./amr_book.data_preparation.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.preprocessing_explained.html">Preprocessing</a></li><li class="breadcrumb-item"><a href="./amr_book.preprocessing_driams.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -154,7 +154,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Exploring the Data</span></a>
+ <span class="menu-text">The DRIAMS Dataset</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -166,18 +166,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Exploring the DRIAMS Dataset</span></span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./amr_book.data_preparation.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">ML Pipeline</span></a>
+ <span class="menu-text">Preprocessing</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -185,14 +179,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./amr_book.single_prediction.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span></a>
+  <a href="./amr_book.preprocessing_explained.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Preprocessing Explained</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./amr_book.caching_and_scenarios.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span></a>
+  <a href="./amr_book.preprocessing_driams.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></span></a>
   </div>
 </li>
       </ul>
@@ -200,7 +194,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Full Walkthrough</span></a>
+ <span class="menu-text">Prediction Pipeline</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -208,8 +202,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./amr_book.single_prediction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./amr_book.caching_and_scenarios.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Full Walkthrough</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./amr_book.ml_pipeline_walkthrough.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
   </div>
 </li>
       </ul>
@@ -253,9 +270,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.exploring_driams.html">Exploring the Data</a></li><li class="breadcrumb-item"><a href="./amr_book.data_preparation.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.preprocessing_explained.html">Preprocessing</a></li><li class="breadcrumb-item"><a href="./amr_book.preprocessing_driams.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></h1>
+<h1 class="title"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></h1>
 </div>
 
 
@@ -288,7 +305,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Before we can train a classifier, each raw <a href="https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization">MALDI-TOF</a> spectrum must be preprocessed and converted into a fixed-length feature vector.</p>
 <p>This notebook walks through every step of that transformation for <strong>one spectrum</strong>, then shows how the full dataset is assembled for machine learning.</p>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> amr-book.data-preparation</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">ns</span> amr-book.preprocessing-driams</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  (<span class="at">:require</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>   <span class="co">;; AMR ML pipeline (prepare, train, predict, measure):</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>   [scicloj.amr.learning <span class="at">:as</span> learning]</span>
@@ -1373,7 +1390,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The m/z axis is partitioned into 3 Da bins and the intensities falling into each bin are <strong>summed</strong>, producing a vector of 6,000 features.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> binned</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  (ripple/bin-spectrum preprocessed {<span class="at">:range</span> [<span class="dv">2000</span> <span class="dv">20000</span>] <span class="at">:step</span> <span class="dv">3</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  (ripple/bin-spectrum trimmed {<span class="at">:range</span> [<span class="dv">2000</span> <span class="dv">20000</span>] <span class="at">:step</span> <span class="dv">3</span>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">count</span> binned)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1415,7 +1432,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="processing-all-spectra" class="level2">
 <h2 class="anchored" data-anchor-id="processing-all-spectra">Processing all spectra</h2>
 <p><code>learning/prepare-ml-data</code> applies preprocessing and binning to every spectrum in the dataset, producing a table with one row per spectrum and 6,000 feature columns (<code>:x0</code> through <code>:x5999</code>) plus the <code>:ri</code> target.</p>
-<p><strong>Note:</strong> the current pipeline applies SNIP baseline removal once (not twice as in the paper’s R code). This is a known simplification; a future version of <a href="https://scicloj.github.io/ripple">Ripple</a> will support the double-SNIP pattern.</p>
 <div class="sourceClojure">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>(<span class="bu">def</span><span class="fu"> preprocessing-params</span></span>
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  {<span class="at">:smooth-window</span> <span class="dv">21</span></span>
@@ -1715,7 +1731,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div style="height:auto;width:100%;"><script>Plotly.newPlot(document.currentScript.parentElement, [{"y":[781,382],"name":"S","marker":{"color":"#1B9E77"},"type":"bar","x":["train","test"]},{"y":[152,85],"name":"R\/I","marker":{"color":"#D95F02"},"type":"bar","x":["train","test"]}], {"width":500,"height":400,"margin":{"t":25},"automargin":false,"plot_bgcolor":"rgb(235,235,235)","xaxis":{"gridcolor":"rgb(255,255,255)","title":"","showgrid":true},"yaxis":{"gridcolor":"rgb(255,255,255)","title":"Count","showgrid":true},"title":"Resistance distribution \u2014 train vs test"}, {});</script></div>
 <p>The dataset is ready. Each row is a preprocessed, binned MALDI spectrum with a resistance label — exactly what the classifier needs.</p>
 <div style="background-color:grey;height:2px;width:100%;"></div>
-<div><pre><small><small>source: <a href="https://github.com/daslu/amr-research/blob/main/notebooks/amr_book/data_preparation.clj">notebooks/amr_book/data_preparation.clj</a></small></small></pre></div>
+<div><pre><small><small>source: <a href="https://github.com/daslu/amr-research/blob/main/notebooks/amr_book/preprocessing_driams.clj">notebooks/amr_book/preprocessing_driams.clj</a></small></small></pre></div>
 
 
 </section>
@@ -2123,13 +2139,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./amr_book.exploring_driams.html" class="pagination-link" aria-label="Exploring the DRIAMS Dataset">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Exploring the DRIAMS Dataset</span></span>
+      <a href="./amr_book.preprocessing_explained.html" class="pagination-link" aria-label="Preprocessing Explained">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Preprocessing Explained</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./amr_book.single_prediction.html" class="pagination-link" aria-label="A Single AMR Prediction">
-        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

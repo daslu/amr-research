@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>4&nbsp; A Single AMR Prediction – AMR</title>
+<title>5&nbsp; A Single AMR Prediction – AMR</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -66,7 +66,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./amr_book.caching_and_scenarios.html" rel="next">
-<link href="./amr_book.data_preparation.html" rel="prev">
+<link href="./amr_book.preprocessing_driams.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
@@ -118,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html">ML Pipeline</a></li><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html">Prediction Pipeline</a></li><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -154,7 +154,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
- <span class="menu-text">Exploring the Data</span></a>
+ <span class="menu-text">The DRIAMS Dataset</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -166,18 +166,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Exploring the DRIAMS Dataset</span></span></a>
   </div>
 </li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./amr_book.data_preparation.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></span></a>
-  </div>
-</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
- <span class="menu-text">ML Pipeline</span></a>
+ <span class="menu-text">Preprocessing</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -185,14 +179,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./amr_book.single_prediction.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span></a>
+  <a href="./amr_book.preprocessing_explained.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Preprocessing Explained</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./amr_book.caching_and_scenarios.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span></a>
+  <a href="./amr_book.preprocessing_driams.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></span></a>
   </div>
 </li>
       </ul>
@@ -200,7 +194,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
- <span class="menu-text">Full Walkthrough</span></a>
+ <span class="menu-text">Prediction Pipeline</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
@@ -208,8 +202,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./amr_book.single_prediction.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./amr_book.caching_and_scenarios.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Full Walkthrough</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./amr_book.ml_pipeline_walkthrough.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
   </div>
 </li>
       </ul>
@@ -241,9 +258,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html">ML Pipeline</a></li><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html">Prediction Pipeline</a></li><li class="breadcrumb-item"><a href="./amr_book.single_prediction.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></h1>
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">A Single AMR Prediction</span></h1>
 </div>
 
 
@@ -311,10 +328,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1400</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(tc/head (tc/select-columns raw-data [<span class="at">:code</span> <span class="at">:species</span> <span class="at">:ri</span> <span class="at">:path</span>]) <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(tc/select-columns raw-data [<span class="at">:code</span> <span class="at">:species</span> <span class="at">:ri</span> <span class="at">:path</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-dataset">
-<p>raw-data [Escherichia coli / Cefepime / A / 2018] [5 4]:</p>
+<p>raw-data [Escherichia coli / Cefepime / A / 2018] [1400 4]:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 29%">
@@ -360,6 +377,108 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Escherichia coli</td>
 <td>true</td>
 <td>data/DRIAMS/DRIAMS-A/raw/2018/d8ad07e0-c646-48a6-b901-cda98e8f7e67_MALDI1.txt.gz</td>
+</tr>
+<tr class="even">
+<td>99191931-3ed3-4a25-9bb2-e65e3fb6939d_MALDI1</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/99191931-3ed3-4a25-9bb2-e65e3fb6939d_MALDI1.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>b9af2612-ddc8-41c0-90aa-04c8fcf16f8d_MALDI1</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/b9af2612-ddc8-41c0-90aa-04c8fcf16f8d_MALDI1.txt.gz</td>
+</tr>
+<tr class="even">
+<td>51b82a9c-6497-4d69-a498-8ce0d9e649c5_MALDI1</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/51b82a9c-6497-4d69-a498-8ce0d9e649c5_MALDI1.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>ad628afc-fc57-4084-ba92-90c18d938319_MALDI1</td>
+<td>Escherichia coli</td>
+<td>true</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/ad628afc-fc57-4084-ba92-90c18d938319_MALDI1.txt.gz</td>
+</tr>
+<tr class="even">
+<td>5553ef00-6b71-4696-95c6-993eb4fe0cdc_MALDI1</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/5553ef00-6b71-4696-95c6-993eb4fe0cdc_MALDI1.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+</tr>
+<tr class="even">
+<td>525421d5-7c97-4523-9d82-5be7b312955c_MALDI2</td>
+<td>Escherichia coli</td>
+<td>true</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/525421d5-7c97-4523-9d82-5be7b312955c_MALDI2.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>1a98fcb2-6b06-4987-aa58-efc0f0da53fc_MALDI2</td>
+<td>Escherichia coli</td>
+<td>true</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/1a98fcb2-6b06-4987-aa58-efc0f0da53fc_MALDI2.txt.gz</td>
+</tr>
+<tr class="even">
+<td>0fac6eeb-0386-444a-8498-97e0b727bcd7_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/0fac6eeb-0386-444a-8498-97e0b727bcd7_MALDI2.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>9251e130-66b6-41ba-a1b2-ae41bce0a200_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/9251e130-66b6-41ba-a1b2-ae41bce0a200_MALDI2.txt.gz</td>
+</tr>
+<tr class="even">
+<td>450fde6c-4db1-4060-b2f9-4bf0cc621f36_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/450fde6c-4db1-4060-b2f9-4bf0cc621f36_MALDI2.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>fdb4014f-c1ae-4e30-bbdd-de6126976728_MALDI2</td>
+<td>Escherichia coli</td>
+<td>true</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/fdb4014f-c1ae-4e30-bbdd-de6126976728_MALDI2.txt.gz</td>
+</tr>
+<tr class="even">
+<td>81ff5b1c-d5b9-4989-a4a3-eb30e735c7b3_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/81ff5b1c-d5b9-4989-a4a3-eb30e735c7b3_MALDI2.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>cb0b127c-dda2-4895-a020-38b3381ce790_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/cb0b127c-dda2-4895-a020-38b3381ce790_MALDI2.txt.gz</td>
+</tr>
+<tr class="even">
+<td>013ca7ca-a5f1-4bd4-b24c-3686b6fa3cf3_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/013ca7ca-a5f1-4bd4-b24c-3686b6fa3cf3_MALDI2.txt.gz</td>
+</tr>
+<tr class="odd">
+<td>05332488-dbae-453a-976f-ab4ff980f3b4_MALDI2</td>
+<td>Escherichia coli</td>
+<td>false</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/05332488-dbae-453a-976f-ab4ff980f3b4_MALDI2.txt.gz</td>
+</tr>
+<tr class="even">
+<td>6d7a407b-2727-4721-905f-31d5030b3ba4_MALDI2</td>
+<td>Escherichia coli</td>
+<td>true</td>
+<td>data/DRIAMS/DRIAMS-A/raw/2018/6d7a407b-2727-4721-905f-31d5030b3ba4_MALDI2.txt.gz</td>
 </tr>
 </tbody>
 </table>
@@ -420,10 +539,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  (learning/predict split-data model))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="sourceClojure">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(tc/head predictions <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>predictions</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="clay-dataset">
-<p>predictions [5 3]:</p>
+<p>predictions [467 3]:</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -456,6 +575,91 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td style="text-align: right;">0.99845076</td>
 <td style="text-align: right;">0.00154921</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.98899591</td>
+<td style="text-align: right;">0.01100409</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99942422</td>
+<td style="text-align: right;">0.00057583</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.96482587</td>
+<td style="text-align: right;">0.03517414</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.96317244</td>
+<td style="text-align: right;">0.03682759</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99724787</td>
+<td style="text-align: right;">0.00275208</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">…</td>
+<td style="text-align: right;">…</td>
+<td>…</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99703884</td>
+<td style="text-align: right;">0.00296113</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99507070</td>
+<td style="text-align: right;">0.00492928</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99746776</td>
+<td style="text-align: right;">0.00253228</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.97992593</td>
+<td style="text-align: right;">0.02007401</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99858761</td>
+<td style="text-align: right;">0.00141242</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99593973</td>
+<td style="text-align: right;">0.00406027</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99854290</td>
+<td style="text-align: right;">0.00145710</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.93154901</td>
+<td style="text-align: right;">0.06845096</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.97795516</td>
+<td style="text-align: right;">0.02204488</td>
+<td>false</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">0.99875307</td>
+<td style="text-align: right;">0.00124687</td>
+<td>false</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">0.99760938</td>
+<td style="text-align: right;">0.00239061</td>
 <td>false</td>
 </tr>
 </tbody>
@@ -902,13 +1106,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./amr_book.data_preparation.html" class="pagination-link" aria-label="Data Preparation">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Data Preparation</span></span>
+      <a href="./amr_book.preprocessing_driams.html" class="pagination-link" aria-label="Preprocessing DRIAMS Spectra">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Preprocessing DRIAMS Spectra</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./amr_book.caching_and_scenarios.html" class="pagination-link" aria-label="Caching and Scenarios">
-        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Caching and Scenarios</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
