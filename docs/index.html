@@ -242,7 +242,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface"><span class="header-section-number">1</span> Preface</a>
   <ul>
-  <li><a href="#status" id="toc-status" class="nav-link" data-scroll-target="#status">Status</a></li>
   <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a>
   <ul class="collapse">
   <li><a href="#get-the-driams-dataset" id="toc-get-the-driams-dataset" class="nav-link" data-scroll-target="#get-the-driams-dataset">1. Get the DRIAMS dataset</a></li>
@@ -295,12 +294,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1 data-number="1"><span class="header-section-number">1</span> Preface</h1>
 <p><a href="https://en.wikipedia.org/wiki/Antimicrobial_resistance">Antimicrobial resistance</a> (AMR) prediction from <a href="https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization">MALDI-TOF</a> mass spectra, reproducing the approach of <a href="https://doi.org/10.1038/s41591-021-01619-9">Weis et al.&nbsp;(2022)</a> using the <a href="https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q">DRIAMS dataset</a>.</p>
 <p>This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to <a href="https://xgboost.readthedocs.io/">XGBoost</a> classification — making it convenient for researchers to explore, reproduce, and extend this line of work in <a href="https://clojure.org/">Clojure</a>.</p>
-<section id="status" class="level2">
-<h2 class="anchored" data-anchor-id="status">Status</h2>
-<p>Preprocessing is ready.</p>
-<p>The machine learning workflow is still work-in-progress.</p>
-<p><a href="https://daslu.github.io/amr-research/">Work-in-progress notes</a></p>
-</section>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 32%">
+<col style="width: 68%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>Source</td>
+<td>https://github.com/daslu/amr-research</td>
+</tr>
+<tr class="even">
+<td>Work-in-progress notes</td>
+<td>https://daslu.github.io/amr-research/</td>
+</tr>
+<tr class="odd">
+<td>Status</td>
+<td>Preprocessing ready, ML workflow work-in-progress</td>
+</tr>
+<tr class="even">
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <section id="get-the-driams-dataset" class="level3">
@@ -324,7 +341,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="render-the-notebooks" class="level3">
 <h3 class="anchored" data-anchor-id="render-the-notebooks">3. Render the notebooks</h3>
-<p>From the REPL:</p>
+<p>From the Clojure REPL:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode clojure code-with-copy"><code class="sourceCode clojure"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>(<span class="kw">require</span> '[dev])</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>(dev/make-book!)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>

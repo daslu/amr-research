@@ -10,21 +10,11 @@
     ]
   },
   {
-    "objectID": "index.html#status",
-    "href": "index.html#status",
-    "title": "AMR",
-    "section": "Status",
-    "text": "Status\nPreprocessing is ready.\nThe machine learning workflow is still work-in-progress.\nWork-in-progress notes",
-    "crumbs": [
-      "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
-    ]
-  },
-  {
     "objectID": "index.html#setup",
     "href": "index.html#setup",
     "title": "AMR",
     "section": "Setup",
-    "text": "Setup\n\n1. Get the DRIAMS dataset\nDownload from the Dryad repository and extract so site folders are under a single directory. You may remove the preprocessing subdirectories:\n/path/to/DRIAMS/\n├── DRIAMS-A/\n│   ├── raw/2015/  raw/2016/  raw/2017/  raw/2018/\n│   └── id/2015/   id/2016/   id/2017/   id/2018/\n├── DRIAMS-B/ ...\n├── DRIAMS-C/ ...\n└── DRIAMS-D/ ...\nWe recommend gzipping the raw .txt files to save space. tablecloth reads .txt.gz transparently.\n\n\n2. Configure the data path\nEither set the environment variable:\nexport DRIAMS_BASE_DIR=/path/to/DRIAMS/\nOr edit amr.edn in the project root:\n{:base-dir \"/path/to/DRIAMS/\"}\n\n\n3. Render the notebooks\nFrom the REPL:\n(require '[dev])\n(dev/make-book!)",
+    "text": "Setup\n\n1. Get the DRIAMS dataset\nDownload from the Dryad repository and extract so site folders are under a single directory. You may remove the preprocessing subdirectories:\n/path/to/DRIAMS/\n├── DRIAMS-A/\n│   ├── raw/2015/  raw/2016/  raw/2017/  raw/2018/\n│   └── id/2015/   id/2016/   id/2017/   id/2018/\n├── DRIAMS-B/ ...\n├── DRIAMS-C/ ...\n└── DRIAMS-D/ ...\nWe recommend gzipping the raw .txt files to save space. tablecloth reads .txt.gz transparently.\n\n\n2. Configure the data path\nEither set the environment variable:\nexport DRIAMS_BASE_DIR=/path/to/DRIAMS/\nOr edit amr.edn in the project root:\n{:base-dir \"/path/to/DRIAMS/\"}\n\n\n3. Render the notebooks\nFrom the Clojure REPL:\n(require '[dev])\n(dev/make-book!)",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Preface</span>"
     ]
