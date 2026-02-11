@@ -88,8 +88,7 @@ raw-spectrum
 ;; A few rows (showing selected antibiotic columns):
 
 (-> metadata
-    (tc/select-columns [:code :species :Cefepime :Ciprofloxacin :Ceftriaxone])
-    (tc/head 5))
+    (tc/select-columns [:code :species :Cefepime :Ciprofloxacin :Ceftriaxone]))
 
 ;; ### Species distribution
 ;;
@@ -101,12 +100,12 @@ raw-spectrum
       (tc/aggregate {:count tc/row-count})
       (tc/order-by [:count] :desc)))
 
-(tc/head species-counts 10)
+(tc/select-rows species-counts (range 10))
 
 ;; The top species as a bar chart:
 
 (-> species-counts
-    (tc/head 15)
+    (tc/select-rows (range 15))
     (plotly/base {:=x :count
                   :=y :species
                   :=title "Top 15 species — DRIAMS-A 2018"
@@ -162,8 +161,11 @@ raw-spectrum
 ;; The DRIAMS paper uses 3 Da bins over [2000, 20000] Da,
 ;; producing 6,000 features per spectrum:
 
+(def trimmed
+  (ripple/trim-spectrum preprocessed {:range [2000 20000]}))
+
 (def binned
-  (ripple/bin-spectrum preprocessed {:range [2000 20000] :step 3}))
+  (ripple/bin-spectrum trimmed {:range [2000 20000] :step 3}))
 
 (count binned)
 

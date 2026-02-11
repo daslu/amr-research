@@ -153,7 +153,7 @@ example-params
 [(tc/row-count predictions-no-cache)
  (tc/column-names predictions-no-cache)]
 
-(tc/head predictions-no-cache 5)
+predictions-no-cache
 
 ;; With caching:
 (def predictions-cached
@@ -196,6 +196,9 @@ metrics-no-cache
         deref)))
 
 metrics-cached
+
+(kind/test-last
+ #(< 0.5 (:ROCAUC %)))
 
 ;; ## Summary
 ;;

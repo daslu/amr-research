@@ -42,7 +42,7 @@
 
 (tc/row-count raw-data)
 
-(tc/head (tc/select-columns raw-data [:code :species :ri :path]) 5)
+(tc/select-columns raw-data [:code :species :ri :path])
 
 ;; ## Stage 2 — Prepare ML data
 ;;
@@ -94,7 +94,7 @@
 (def predictions
   (learning/predict split-data model))
 
-(tc/head predictions 5)
+predictions
 
 ;; ## Stage 6 — Measure
 ;;

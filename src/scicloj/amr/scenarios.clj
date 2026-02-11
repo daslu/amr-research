@@ -1,14 +1,12 @@
+;; DRAFT
 ^{:clay {:hide-code true
          :hide-info-line true
          :hide-ui-header true}}
 (ns scicloj.amr.scenarios
-  (:require [scicloj.pocket :as pocket]
-            [tablecloth.api :as tc]
+  (:require [tablecloth.api :as tc]
             [scicloj.kindly.v4.kind :as kind]
             [scicloj.amr.learning :as learning]
-            [clojure.tools.logging :as log]
             [scicloj.amr.data.bacteria :as bacteria]
-            [scicloj.amr.data.ingestion :as ingestion]
             [tech.v3.dataset.print :as ds-print]
             [scicloj.tableplot.v1.plotly :as plotly]
             [tablecloth.column.api :as tcc])
@@ -49,17 +47,16 @@
                        (learning/prepare-ml-data-cached {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
                                                          :binning-params {:range [2000 20000]
                                                                           :step binning-step}}))]
-       (when @ml-data
+       (when (deref ml-data)
          (let [split-data (-> ml-data
                               (learning/split-cached {:seed 1})
-                              pocket/maybe-deref)
+                              deref)
                {:keys [train test]} split-data
-               model (pocket/cached #'learning/train split-data {:model-type :xgboost/classification
-                                                                 :round xgboost-rounds
-                                                                 :num-class 2})
-               predictions @(pocket/cached #'learning/predict split-data model)
+               model (learning/train-cached split-data {:model-type :xgboost/classification
+                                                        :round xgboost-rounds
+                                                        :num-class 2})
+               predictions (deref (learning/predict-cached split-data model))
                to-measure (some-> predictions
-                                  pocket/maybe-deref
                                   (tc/add-column :ri (:ri test)))
                result (merge (:case scenario)
                              scenario

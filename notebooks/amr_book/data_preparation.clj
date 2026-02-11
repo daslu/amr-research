@@ -305,7 +305,7 @@ raw-spectrum
 ;; producing a vector of 6,000 features.
 
 (def binned
-  (ripple/bin-spectrum preprocessed {:range [2000 20000] :step 3}))
+  (ripple/bin-spectrum trimmed {:range [2000 20000] :step 3}))
 
 (count binned)
 
