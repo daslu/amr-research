@@ -49,7 +49,7 @@
          :keys [binning-step
                 xgboost-rounds]}]
      (let [ml-data (-> ((pocket/caching-fn #'learning/prepare-raw-data) (:case scenario))
-                       ((pocket/caching-fn #'learning/prepare-ml-data) {:preprocessing-params {:smooth-window 21}
+                       ((pocket/caching-fn #'learning/prepare-ml-data) {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
                                                                         :binning-params {:range [2000 20000]
                                                                                          :step binning-step}}))]
        (when @ml-data

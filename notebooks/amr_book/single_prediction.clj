@@ -54,7 +54,7 @@
 ;; The result is a dataset with columns `:ri`, `:x0`, `:x1`, ... `:x5999`.
 
 (def ml-params
-  {:preprocessing-params {:smooth-window 21}
+  {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
    :binning-params {:range [2000 20000] :step 3}})
 
 (def ml-data

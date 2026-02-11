@@ -21,6 +21,8 @@
    [scicloj.ripple.maldi :as ripple]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
+   ;; Column-level operations:
+   [tablecloth.column.api :as tcc]
    ;; Interactive plotting via Plotly (https://scicloj.github.io/tableplot/):
    [scicloj.tableplot.v1.plotly :as plotly]
    ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
@@ -50,6 +52,18 @@
 ;; > dimensionality, intensity measurements are binned using the bin
 ;; > size of 3 Da. [...] each sample is represented by a vector
 ;; > containing 6,000 features.
+;;
+;; Examining the
+;; [actual R code](https://github.com/BorgwardtLab/maldi_amr/blob/master/amr_maldi_ml/DRIAMS_preprocessing/DRIAMS-A_2018_preprocessed.r)
+;; reveals two details not mentioned in the text:
+;;
+;; - The [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) smoothing uses
+;;   [MALDIquant](https://strimmerlab.github.io/software/maldiquant/)'s
+;;   default polynomial order of **3** (not specified explicitly in
+;;   their script).
+;; - The [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline
+;;   removal is applied **twice**:
+;;   `removeBaseline(removeBaseline(spectra, method="SNIP", iterations=20))`.
 ;;
 ;; We now walk through each of these steps.
 
@@ -127,13 +141,11 @@ raw-spectrum
 
 ;; ## Step-by-step preprocessing
 ;;
-;; The [DRIAMS paper](https://doi.org/10.1038/s41591-021-01619-9)
-;; applies four preprocessing steps, implemented by
-;; [Ripple](https://scicloj.github.io/ripple):
+;; The steps below follow the paper's R code exactly:
 ;;
 ;; 1. Square root transform (variance stabilization)
-;; 2. [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) smoothing (half-window-size 10)
-;; 3. [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal (20 iterations)
+;; 2. [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter) smoothing (half-window-size 10, polynomial order 3)
+;; 3. [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal (20 iterations, **applied twice**)
 ;; 4. TIC normalization (total area → 1.0)
 ;;
 ;; We apply each one separately so we can see its effect.
@@ -150,6 +162,10 @@ raw-spectrum
 (def sqrt-intensities
   (ripple/sqrt-transform raw-intensities))
 
+(tc/dataset {:mass masses
+             :raw-intensity raw-intensities
+             :sqrt-intensity sqrt-intensities})
+
 (-> (tc/dataset {:mass masses :intensity sqrt-intensities})
     (plotly/base {:=x :mass
                   :=y :intensity
@@ -164,12 +180,17 @@ raw-spectrum
 ;; A polynomial fit in a sliding window removes
 ;; high-frequency noise while preserving peak shapes.
 ;; The paper uses half-window-size 10 (= full window of
-;; 21 points) with polynomial order 2.
+;; 21 points) with MALDIquant's default polynomial order
+;; of 3.
 
 (def smoothed-intensities
   (ripple/savitzky-golay-smooth sqrt-intensities
                                 {:window-size 21
-                                 :polynomial-order 2}))
+                                 :polynomial-order 3}))
+
+(tc/dataset {:mass masses
+             :sqrt sqrt-intensities
+             :smoothed smoothed-intensities})
 
 (-> (tc/dataset {:mass masses
                  :sqrt sqrt-intensities
@@ -186,26 +207,41 @@ raw-spectrum
     (plotly/layer-line)
     plotly/plot)
 
-;; ### Step 3 — SNIP baseline removal
+;; ### Step 3 — SNIP baseline removal (twice)
 ;;
 ;; The [SNIP algorithm](https://doi.org/10.1016/0168-583X(88)90063-8)
 ;; estimates and subtracts the slowly varying baseline
 ;; caused by chemical matrix effects.
+;;
+;; The paper's R code applies SNIP **twice** in succession:
+;; `removeBaseline(removeBaseline(spectra, method="SNIP", iterations=20))`.
+;; The second pass catches any residual baseline that the
+;; first pass left behind.
 
-(def baseline-corrected
+(def baseline-corrected-once
   (ripple/snip-baseline-removal smoothed-intensities
                                 {:iterations 20}))
 
+(def baseline-corrected
+  (ripple/snip-baseline-removal baseline-corrected-once
+                                {:iterations 20}))
+
+(tc/dataset {:mass masses
+             :smoothed smoothed-intensities
+             :after-1st-snip baseline-corrected-once
+             :after-2nd-snip baseline-corrected})
+
 (-> (tc/dataset {:mass masses
                  :smoothed smoothed-intensities
-                 :baseline-corrected baseline-corrected})
-    (tc/pivot->longer [:smoothed :baseline-corrected]
+                 :after-first-snip baseline-corrected-once
+                 :after-second-snip baseline-corrected})
+    (tc/pivot->longer [:smoothed :after-first-snip :after-second-snip]
                       {:target-columns :step
                        :value-column-name :intensity})
     (plotly/base {:=x :mass
                   :=y :intensity
                   :=color :step
-                  :=title "Before and after baseline removal"
+                  :=title "Baseline removal — single vs double SNIP"
                   :=x-title "m/z (Da)"
                   :=y-title "Intensity"})
     (plotly/layer-line)
@@ -223,6 +259,10 @@ raw-spectrum
   (ripple/tic-normalize masses baseline-corrected
                         {:target-area 1.0}))
 
+(tc/dataset {:mass masses
+             :baseline-corrected baseline-corrected
+             :normalized normalized-intensities})
+
 (-> (tc/dataset {:mass masses :intensity normalized-intensities})
     (plotly/base {:=x :mass
                   :=y :intensity
@@ -232,27 +272,6 @@ raw-spectrum
     (plotly/layer-line)
     plotly/plot)
 
-;; ### Verification
-;;
-;; Ripple's `preprocess-spectrum-data` applies all four steps
-;; in one call. Let's confirm our step-by-step result matches:
-
-(def preprocessing-params
-  {:smooth-window 21})
-
-(def preprocessed
-  (ripple/preprocess-spectrum-data raw-spectrum preprocessing-params))
-
-(def max-diff
-  (-> (map - normalized-intensities (:intensity preprocessed))
-      (->> (map abs))
-      (->> (reduce max))))
-
-max-diff
-
-(kind/test-last
- #(< % 1e-10))
-
 ;; ## Trimming and binning
 ;;
 ;; For machine learning we need a fixed-length feature vector.
@@ -260,6 +279,9 @@ max-diff
 ;; into 3 Da wide bins, producing 6,000 features.
 
 ;; ### Trimming
+
+(def preprocessed
+  (tc/dataset {:mass masses :intensity normalized-intensities}))
 
 (def trimmed
   (ripple/trim-spectrum preprocessed {:range [2000 20000]}))
@@ -312,6 +334,16 @@ max-diff
 ;; binning to every spectrum in the dataset, producing
 ;; a table with one row per spectrum and 6,000 feature
 ;; columns (`:x0` through `:x5999`) plus the `:ri` target.
+;;
+;; **Note:** the current pipeline applies SNIP baseline
+;; removal once (not twice as in the paper's R code).
+;; This is a known simplification; a future version of
+;; [Ripple](https://scicloj.github.io/ripple) will support
+;; the double-SNIP pattern.
+
+(def preprocessing-params
+  {:smooth-window 21
+   :smooth-polynomial 3})
 
 (def ml-params
   {:preprocessing-params preprocessing-params
@@ -326,8 +358,7 @@ max-diff
 ;; The first few columns:
 
 (-> ml-data
-    (tc/select-columns (into [:ri] (map #(keyword (str "x" %)) (range 5))))
-    (tc/head 5))
+    (tc/select-columns (into [:ri] (map #(keyword (str "x" %)) (range 5)))))
 
 ;; ### A few spectra overlaid
 ;;
@@ -366,11 +397,30 @@ max-diff
 (def split-data
   (learning/split ml-data {:seed 1}))
 
-{:train (tc/row-count (:train split-data))
- :test (tc/row-count (:test split-data))}
+{:train-rows (tc/row-count (:train split-data))
+ :test-rows (tc/row-count (:test split-data))
+ :train-resistance-rate (-> split-data :train :ri tcc/mean)
+ :test-resistance-rate (-> split-data :test :ri tcc/mean)}
 
 (kind/test-last
- #(and (> (:train %) 0) (> (:test %) 0)))
+ #(and (> (:train-rows %) 0) (> (:test-rows %) 0)))
+
+;; Resistance distribution in train and test sets:
+
+(-> (concat
+     (map (fn [ri] {:split "train" :label (if ri "R/I" "S")}) ((:train split-data) :ri))
+     (map (fn [ri] {:split "test" :label (if ri "R/I" "S")}) ((:test split-data) :ri)))
+    tc/dataset
+    (tc/group-by [:split :label])
+    (tc/aggregate {:count tc/row-count})
+    (plotly/base {:=x :split
+                  :=y :count
+                  :=color :label
+                  :=title "Resistance distribution — train vs test"
+                  :=x-title ""
+                  :=y-title "Count"})
+    (plotly/layer-bar)
+    plotly/plot)
 
 ;; The dataset is ready. Each row is a preprocessed,
 ;; binned MALDI spectrum with a resistance label —

@@ -141,6 +141,7 @@ raw-spectrum
    raw-spectrum
    {:should-sqrt-transform true
     :smooth-window 21
+    :smooth-polynomial 3
     :baseline-iterations 20
     :should-tic-normalize true}))
 
