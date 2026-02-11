@@ -4,6 +4,14 @@
 
 This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to [XGBoost](https://xgboost.readthedocs.io/) classification — making it convenient for researchers to explore, reproduce, and extend this line of work in [Clojure](https://clojure.org/).
 
+## Status
+
+Preprocessing is ready.
+
+The machine learning workflow is still work-in-progress.
+
+[Work-in-progress notes](https://daslu.github.io/amr-research/)
+
 ## Setup
 
 ### 1. Get the DRIAMS dataset
@@ -38,7 +46,7 @@ Or edit `amr.edn` in the project root:
 
 ### 3. Render the notebooks
 
-From the REPL:
+From the Clojure REPL:
 
 ```clojure
 (require '[dev])
