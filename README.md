@@ -1,16 +1,14 @@
 # scicloj.amr
 
-[Antimicrobial resistance](https://en.wikipedia.org/wiki/Antimicrobial_resistance) (AMR) prediction from [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization) mass spectra, reproducing the approach of [Weis et al. (2022)](https://doi.org/10.1038/s41591-021-01619-9) using the [DRIAMS dataset](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q).
+Predict [antimicrobial resistance](https://en.wikipedia.org/wiki/Antimicrobial_resistance) (AMR) directly from [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization) mass spectra using machine learning — a [Clojure](https://clojure.org/) reproduction of [Weis et al. (2022)](https://doi.org/10.1038/s41591-021-01619-9) using the [DRIAMS dataset](https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q).
 
-This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to [XGBoost](https://xgboost.readthedocs.io/) classification — making it convenient for researchers to explore, reproduce, and extend this line of work in [Clojure](https://clojure.org/).
+This project provides notebooks that walk through the full pipeline — from raw spectra to [XGBoost](https://xgboost.readthedocs.io/) classification — making it convenient for researchers to explore, reproduce, and extend this line of work.
 
+## Status
 
-|                        |                                                   |
-|------------------------|---------------------------------------------------|
-| Source                 | https://github.com/daslu/amr-research             |
-| Work-in-progress notes | https://daslu.github.io/amr-research/             |
-| Status                 | Preprocessing ready, ML workflow work-in-progress |
-|                        |                                                   |
+* Preprocessing pipeline — ready and tested
+* Machine learning workflows — in progress
+* API may change as the project evolves
 
 ## Setup
 
@@ -53,9 +51,11 @@ From the Clojure REPL:
 (dev/make-book!)
 ```
 
+This produces a [Quarto](https://quarto.org/) book under `docs/`.
+
 ## Key Libraries
 
-This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem:
+This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem for scientific computing in Clojure:
 
 - **[tablecloth](https://scicloj.github.io/tablecloth/)** — dataframe library for tabular data manipulation (built on [tech.ml.dataset](https://github.com/techascent/tech.ml.dataset) and [dtype-next](https://github.com/cnuernber/dtype-next))
 - **[metamorph.ml](https://github.com/scicloj/metamorph.ml)** — machine learning pipelines ([XGBoost](https://xgboost.readthedocs.io/) classification in this project)
@@ -69,9 +69,10 @@ This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem:
 
 - Weis, C., et al. (2022). [Direct antimicrobial resistance prediction from clinical MALDI-TOF mass spectra using machine learning](https://doi.org/10.1038/s41591-021-01619-9). *Nature Medicine*, 28, 164–174.
 
----
+## Links
 
-Part of the [scicloj](https://scicloj.github.io/) ecosystem for scientific computing in [Clojure](https://clojure.org/).
+- [Source code](https://github.com/daslu/amr-research)
+- [Work-in-progress notes](https://daslu.github.io/amr-research)
 
 ## License
 
