@@ -74,15 +74,21 @@
 
 ;; ### Assembling the components
 ;;
-;; We place five peaks of varying width and height,
-;; add an exponentially decaying baseline (typical of MALDI
-;; matrix effects), and overlay deterministic sinusoidal
-;; "noise" for reproducibility.
+;; We place five peaks of varying width and height on top of a
+;; complex baseline: an exponential decay (typical of MALDI matrix
+;; effects) plus sinusoidal undulations and broad humps that mimic
+;; the irregular backgrounds seen in real spectra. Deterministic
+;; sinusoidal "noise" is overlaid for reproducibility.
 
 (def raw-intensities
   (mapv (fn [m]
-          (let [baseline (+ (* 1200 (Math/exp (- (/ (- m 1800) 600.0))))
-                            (* 0.03 (- m 1800)))
+          (let [;; Complex baseline: exponential decay + sinusoidal undulations + broad bumps
+                baseline (+ (* 1500 (Math/exp (- (/ (- m 1800) 400.0))))
+                            (* 150 (Math/sin (/ (- m 1800) 300.0)))
+                            (* 80 (Math/cos (/ (- m 2000) 150.0)))
+                            (gaussian m 2600 100.0 500.0)
+                            (gaussian m 3400 80.0 400.0)
+                            (gaussian m 4200 120.0 300.0))
                 peak1 (gaussian m 2200 8.0 600.0)
                 peak2 (gaussian m 2800 15.0 350.0)
                 peak3 (gaussian m 3200 5.0 800.0)
@@ -110,9 +116,10 @@ raw-spectrum
     (plotly/layer-line {:=mark-opacity 0.8})
     plotly/plot)
 
-;; The baseline decays from left to right, obscuring the true
-;; peak heights. Noise adds spurious wiggles. The region below
-;; 2000 Da is dominated by matrix signal.
+;; The baseline has an exponential decay, broad humps, and wavy
+;; undulations — obscuring the true peak heights. Noise adds
+;; spurious wiggles. The region below 2000 Da is dominated by
+;; matrix signal.
 
 ;; ## Step 1 — Square Root Transform
 ;;
@@ -284,9 +291,11 @@ raw-spectrum
       (plotly/layer-line {:=mark-opacity 0.7})
       plotly/plot))
 
-;; The first pass removes most of the exponential baseline.
-;; The second pass removes the remaining curvature, bringing
-;; the background close to zero between peaks.
+;; The first pass removes the bulk of the baseline. The second
+;; pass is a subtle refinement — it shaves off residual
+;; curvature that the first pass left behind. The effect is
+;; small but systematic, bringing inter-peak regions slightly
+;; closer to zero.
 
 ;; Verify the background region (away from peaks) is near zero:
 
