@@ -1,0 +1,19 @@
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    theme: [cosmo, notebooks/custom.scss]
+    toc-expand: 3
+    number-depth: 1
+  revealjs: {theme: solarized, navigation-mode: vertical, transition: slide, background-transition: fade, incremental: true}
+project: {type: book}
+book:
+  chapters:
+  - index.qmd
+  - part: Exploring the Data
+    chapters: [amr_book.exploring_driams.qmd, amr_book.data_preparation.qmd]
+  - part: ML Pipeline
+    chapters: [amr_book.single_prediction.qmd, amr_book.caching_and_scenarios.qmd]
+  - part: Full Walkthrough
+    chapters: [amr_book.ml_pipeline_walkthrough.qmd]
+  title: AMR
