@@ -5,16 +5,12 @@
 This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to [XGBoost](https://xgboost.readthedocs.io/) classification — making it convenient for researchers to explore, reproduce, and extend this line of work in [Clojure](https://clojure.org/).
 
 
-|||
-|-|-|
-|Source|https://github.com/daslu/amr-research|
-|Work-in-progress notes|https://daslu.github.io/amr-research/|
-
-## Status
-
-Preprocessing is ready.
-
-The machine learning workflow is still work-in-progress.
+|                        |                                                   |
+|------------------------|---------------------------------------------------|
+| Source                 | https://github.com/daslu/amr-research             |
+| Work-in-progress notes | https://daslu.github.io/amr-research/             |
+| Status                 | Preprocessing ready, ML workflow work-in-progress |
+|                        |                                                   |
 
 ## Setup
 
