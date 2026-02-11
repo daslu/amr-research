@@ -64,3 +64,7 @@ This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem:
 ---
 
 Part of the [scicloj](https://scicloj.github.io/) ecosystem for scientific computing in [Clojure](https://clojure.org/).
+
+## License
+
+MIT License — see [LICENSE](LICENSE) file.
