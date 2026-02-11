@@ -1,4 +1,4 @@
-;; # Data Preparation with Synthetic Spectra
+;; # Preprocessing Explained
 ;;
 ;; This notebook demonstrates the
 ;; [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization)
@@ -24,7 +24,7 @@
 ;; 5. Trim to [2000, 20000] Da
 ;; 6. Bin into 3 Da bins → 6000 features
 
-(ns amr-book.data-preparation-synthetic
+(ns amr-book.preprocessing-explained
   (:require
    ;; Ripple MALDI signal processing (https://scicloj.github.io/ripple):
    [scicloj.ripple.maldi :as ripple]

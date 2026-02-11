@@ -1,4 +1,4 @@
-;; # Data Preparation
+;; # Preprocessing DRIAMS Spectra
 ;;
 ;; Before we can train a classifier, each raw
 ;; [MALDI-TOF](https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization)
@@ -9,7 +9,7 @@
 ;; transformation for **one spectrum**, then shows how
 ;; the full dataset is assembled for machine learning.
 
-(ns amr-book.data-preparation
+(ns amr-book.preprocessing-driams
   (:require
    ;; AMR ML pipeline (prepare, train, predict, measure):
    [scicloj.amr.learning :as learning]

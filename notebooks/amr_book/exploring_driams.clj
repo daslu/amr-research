@@ -20,14 +20,10 @@
   (:require
    ;; AMR data loading utilities:
    [scicloj.amr.data.ingestion :as ingestion]
-   ;; Ripple MALDI signal processing (https://scicloj.github.io/ripple):
-   [scicloj.ripple.maldi :as ripple]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
    ;; Interactive plotting via Plotly (https://scicloj.github.io/tableplot/):
-   [scicloj.tableplot.v1.plotly :as plotly]
-   ;; Annotating kinds of visualizations (https://scicloj.github.io/kindly-noted/):
-   [scicloj.kindly.v4.kind :as kind]))
+   [scicloj.tableplot.v1.plotly :as plotly]))
 
 ;; ## Where is the data?
 ;;
@@ -128,52 +124,6 @@ raw-spectrum
                  :combined_code :column-0 (keyword "Unnamed: 0")})))
 
 (count antibiotic-columns)
-
-;; ## Preprocessing with Ripple
-;;
-;; The DRIAMS paper applies: square root transform, [Savitzky-Golay](https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter)
-;; smoothing, [SNIP](https://doi.org/10.1016/0168-583X(88)90063-8) baseline removal, and TIC normalization.
-;; [Ripple](https://scicloj.github.io/ripple) does this in one call:
-
-(def preprocessed
-  (ripple/preprocess-spectrum-data
-   raw-spectrum
-   {:should-sqrt-transform true
-    :smooth-window 21
-    :smooth-polynomial 3
-    :baseline-iterations 20
-    :should-tic-normalize true}))
-
-;; The result is the same format — a dataset with `:mass` and `:intensity`:
-
-(-> preprocessed
-    (plotly/base {:=x :mass
-                  :=y :intensity
-                  :=title "Preprocessed spectrum"
-                  :=x-title "m/z (Da)"
-                  :=y-title "Intensity (normalized)"})
-    (plotly/layer-line)
-    plotly/plot)
-
-;; ## Binning to fixed-width features
-;;
-;; For machine learning we need fixed-length feature vectors.
-;; The DRIAMS paper uses 3 Da bins over [2000, 20000] Da,
-;; producing 6,000 features per spectrum:
-
-(def trimmed
-  (ripple/trim-spectrum preprocessed {:range [2000 20000]}))
-
-(def binned
-  (ripple/bin-spectrum trimmed {:range [2000 20000] :step 3}))
-
-(count binned)
-
-(kind/test-last
- #(= % 6000))
-
-;; Each value is the summed intensity in that 3 Da bin.
-;; This is the representation fed to the classifier.
 
 ;; ## References
 ;;
