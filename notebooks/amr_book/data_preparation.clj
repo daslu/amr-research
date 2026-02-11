@@ -335,11 +335,6 @@ raw-spectrum
 ;; a table with one row per spectrum and 6,000 feature
 ;; columns (`:x0` through `:x5999`) plus the `:ri` target.
 ;;
-;; **Note:** the current pipeline applies SNIP baseline
-;; removal once (not twice as in the paper's R code).
-;; This is a known simplification; a future version of
-;; [Ripple](https://scicloj.github.io/ripple) will support
-;; the double-SNIP pattern.
 
 (def preprocessing-params
   {:smooth-window 21

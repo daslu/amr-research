@@ -358,14 +358,11 @@ raw-spectrum
 ;; After normalization, the two spectra are identical —
 ;; the 4× intensity difference has been removed.
 
-;; ## All Steps Combined
+;; ## Single-call Preprocessing
 ;;
 ;; Ripple's `preprocess-spectrum-data` applies the square root,
-;; smoothing, baseline removal, and normalization in one call.
-;;
-;; **Note:** the current version applies SNIP once (not twice
-;; as in the paper's R code). This is a known simplification;
-;; a future Ripple version will support double SNIP.
+;; smoothing, baseline removal (twice by default), and normalization
+;; in one call — matching the paper's R code.
 
 (def preprocessed
   (ripple/preprocess-spectrum-data
@@ -381,13 +378,22 @@ preprocessed
 (-> preprocessed
     (plotly/base {:=x :mass
                   :=y :intensity
-                  :=title "After full preprocessing (single SNIP)"
+                  :=title "After full preprocessing (double SNIP)"
                   :=x-title "m/z (Da)"
                   :=y-title "Intensity (normalized)"})
     (plotly/layer-line {:=mark-opacity 0.8})
     plotly/plot)
 
-;; ## Trimming and Binning
+;; Verify it matches the step-by-step result:
+
+(let [manual-result normalized-intensities
+      auto-result (:intensity preprocessed)
+      diff (dfn/abs (dfn/- manual-result auto-result))]
+  {:max-abs-difference (dfn/reduce-max diff)
+   :identical? (< (dfn/reduce-max diff) 1e-10)})
+
+(kind/test-last
+ #(:identical? %))
 ;;
 ;; For machine learning, spectra must be converted to
 ;; fixed-length feature vectors. The DRIAMS protocol:
