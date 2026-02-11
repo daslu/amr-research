@@ -242,6 +242,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface"><span class="header-section-number">1</span> Preface</a>
   <ul>
+  <li><a href="#status" id="toc-status" class="nav-link" data-scroll-target="#status">Status</a></li>
   <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a>
   <ul class="collapse">
   <li><a href="#get-the-driams-dataset" id="toc-get-the-driams-dataset" class="nav-link" data-scroll-target="#get-the-driams-dataset">1. Get the DRIAMS dataset</a></li>
@@ -250,6 +251,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#key-libraries" id="toc-key-libraries" class="nav-link" data-scroll-target="#key-libraries">Key Libraries</a></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  <li><a href="#license" id="toc-license" class="nav-link" data-scroll-target="#license">License</a></li>
   <li><a href="#chapters-in-this-book" id="toc-chapters-in-this-book" class="nav-link" data-scroll-target="#chapters-in-this-book">Chapters in this book</a></li>
   </ul></li>
   </ul>
@@ -293,6 +295,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1 data-number="1"><span class="header-section-number">1</span> Preface</h1>
 <p><a href="https://en.wikipedia.org/wiki/Antimicrobial_resistance">Antimicrobial resistance</a> (AMR) prediction from <a href="https://en.wikipedia.org/wiki/Matrix-assisted_laser_desorption/ionization">MALDI-TOF</a> mass spectra, reproducing the approach of <a href="https://doi.org/10.1038/s41591-021-01619-9">Weis et al.&nbsp;(2022)</a> using the <a href="https://datadryad.org/stash/dataset/doi:10.5061/dryad.bzkh1899q">DRIAMS dataset</a>.</p>
 <p>This project provides well-explained notebooks that walk through the full pipeline — from raw spectra to <a href="https://xgboost.readthedocs.io/">XGBoost</a> classification — making it convenient for researchers to explore, reproduce, and extend this line of work in <a href="https://clojure.org/">Clojure</a>.</p>
+<section id="status" class="level2">
+<h2 class="anchored" data-anchor-id="status">Status</h2>
+<p>Preprocessing is ready.</p>
+<p>The machine learning workflow is still work-in-progress.</p>
+<p><a href="https://daslu.github.io/amr-research/">Work-in-progress notes</a></p>
+</section>
 <section id="setup" class="level2">
 <h2 class="anchored" data-anchor-id="setup">Setup</h2>
 <section id="get-the-driams-dataset" class="level3">
@@ -341,6 +349,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <hr>
 <p>Part of the <a href="https://scicloj.github.io/">scicloj</a> ecosystem for scientific computing in <a href="https://clojure.org/">Clojure</a>.</p>
+</section>
+<section id="license" class="level2">
+<h2 class="anchored" data-anchor-id="license">License</h2>
+<p>MIT License — see <a href="LICENSE">LICENSE</a> file.</p>
 </section>
 <section id="chapters-in-this-book" class="level2">
 <h2 class="anchored" data-anchor-id="chapters-in-this-book">Chapters in this book</h2>
