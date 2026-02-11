@@ -1,5 +1,6 @@
 {"Exploring the Data"   ["exploring_driams"
-                         "data_preparation"]
+                         "data_preparation"
+                         "data_preparation_synthetic"]
  "ML Pipeline"          ["single_prediction"
                          "caching_and_scenarios"]
  "Full Walkthrough"     ["ml_pipeline_walkthrough"]}
