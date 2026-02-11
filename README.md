@@ -76,4 +76,4 @@ This project builds on the [Scicloj](https://scicloj.github.io/) ecosystem for s
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) file.
+MIT License — see [LICENSE](https://github.com/daslu/amr-research/blob/main/LICENSE) file.
