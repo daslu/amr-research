@@ -17,7 +17,7 @@
                         "Ertapenem"
                         "Ceftriaxone"
                         "Cefepime"
-                        "Piperacillin–Tazobactam"
+                        "Piperacillin-Tazobactam"
                         "Nitrofurantoin"
                         "Ciprofloxacin"
                         "Cotrimoxazole"]
@@ -25,8 +25,8 @@
                           "Clindamycin"
                           "Vancomycin"
                           "Linezolid"
-                          "Amoxicillin–Clavulanic acid"
-                          "Ampicillin–Amoxicillin"
+                          "Amoxicillin-Clavulanic acid"
+                          "Ampicillin-Amoxicillin"
                           "Oxacillin"]
        bacteria/P-aeruginosa ["Piperacillin-Tazobactam"
                               "Cefepime"
