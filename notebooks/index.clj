@@ -17,4 +17,3 @@
      (drop 1)
      (str/join "\n"))
 
-;; ## Chapters in this book
