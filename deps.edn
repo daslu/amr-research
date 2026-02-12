@@ -4,15 +4,15 @@
         org.clojure/tools.logging {:mvn/version "1.3.0"}
         ch.qos.logback/logback-classic {:mvn/version "1.4.14"}
         org.scicloj/ripple {:mvn/version "0.1.1"}
-        org.scicloj/pocket {:mvn/version "0.2.2"}
+        org.scicloj/pocket {:mvn/version "0.2.3"}
         org.scicloj/tableplot {:mvn/version "1-beta15"}}
  :aliases {:nREPL {:extra-deps
-                   {nrepl/nrepl {:mvn/version "1.3.1"}}}
+                   {nrepl/nrepl {:mvn/version "1.3.1"}}
+                   :jvm-opts ["-Xmx30g"]}
            :test {:extra-paths ["test"]
                   :extra-deps {io.github.cognitect-labs/test-runner
                                {:git/url "https://github.com/cognitect-labs/test-runner"
                                 :git/sha "9e35c979860c75555adaff7600070c60004a0f44"}}
                   :main-opts ["-m" "cognitect.test-runner"
                               "-d" "test"]}}
- :jvm-opts ["-Xmx50g"]
  :paths ["src" "notebooks"]}
