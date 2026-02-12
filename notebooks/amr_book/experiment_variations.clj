@@ -35,9 +35,7 @@
    ;; Interactive plotting (https://scicloj.github.io/tableplot/):
    [scicloj.tableplot.v1.plotly :as plotly]
    ;; Annotating kinds of visualizations:
-   [scicloj.kindly.v4.kind :as kind]
-   ;; EDN reader:
-   [clojure.edn :as edn]))
+   [scicloj.kindly.v4.kind :as kind]))
 
 ;; ## Shared parameters
 ;;
@@ -45,15 +43,14 @@
 ;; [Weis et al.](https://doi.org/10.1038/s41591-021-01619-9)
 ;; paper throughout.
 
-;; ## Cache configuration
+;; ## Configuration
 ;;
-;; `pocket.edn` configures the cache directory (outside Dropbox)
-;; and the in-memory LRU threshold (low, since each ML dataset
-;; is ~48 MB).
+;; Pocket reads `pocket.edn` at project root on startup.
+;; The cache directory lives outside Dropbox (to avoid
+;; syncing ~15 GB), and the in-memory LRU threshold is
+;; low since each ML dataset is ~48 MB.
 
-(let [cfg (-> "pocket.edn" slurp edn/read-string)]
-  (pocket/set-base-cache-dir! (:base-cache-dir cfg))
-  (pocket/set-mem-cache-options! (:mem-cache cfg)))
+(pocket/config)
 
 ;; ---
 
@@ -271,6 +268,13 @@ split-comparison
 ;; cross-year is close behind, and cross-site shows the
 ;; largest drop — the model relies partly on hospital-specific
 ;; spectral patterns.
+;;
+;; Note that the within-site experiment trains on ~75% of the
+;; 2018 data, while cross-year and cross-site train on the
+;; full dataset of the source year/site. The performance drop
+;; from cross-transfer occurs despite having *more* training
+;; data — distribution shift, not data scarcity, is the
+;; dominant factor.
 
 ;; ---
 
