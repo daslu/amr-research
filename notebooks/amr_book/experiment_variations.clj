@@ -165,6 +165,71 @@
        :ROCAUC (compute-rocauc (:ri test-data) (get pred-ds 1))})
     (catch Exception _e nil)))
 
+;; ## Diagnostic plots
+;;
+;; Per-scenario
+;; [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic),
+;; [precision–recall](https://en.wikipedia.org/wiki/Precision_and_recall),
+;; and [calibration](https://en.wikipedia.org/wiki/Calibration_(statistics))
+;; curves.
+
+(defn plot-roc-curve
+  "Plot the ROC curve (TPR vs FPR)."
+  [actuals probabilities]
+  (let [curve (LabelEvaluationUtil/generateROCCurve
+               (boolean-array (mapv pos? actuals))
+               (double-array probabilities))]
+    (-> {:fpr (vec (.fpr curve))
+         :tpr (vec (.tpr curve))}
+        tc/dataset
+        (plotly/base {:=title "ROC curve"
+                      :=x :fpr :=y :tpr})
+        plotly/layer-line
+        plotly/plot)))
+
+(defn plot-pr-curve
+  "Plot the precision–recall curve."
+  [actuals probabilities]
+  (let [curve (LabelEvaluationUtil/generatePRCurve
+               (boolean-array (mapv pos? actuals))
+               (double-array probabilities))]
+    (-> {:recall (vec (.recall curve))
+         :precision (vec (.precision curve))}
+        tc/dataset
+        (plotly/base {:=title "Precision–Recall curve"
+                      :=x :recall :=y :precision})
+        plotly/layer-line
+        plotly/plot)))
+
+(defn plot-calibration
+  "Plot predicted probability vs observed resistance rate.
+  Samples are sorted by predicted probability and grouped
+  into bins of 30."
+  [actuals probabilities]
+  (-> {:probability probabilities :actual actuals}
+      tc/dataset
+      (tc/order-by :probability)
+      (tc/add-column :i (range))
+      (tc/map-columns :bin [:i] #(quot % 30))
+      (tc/group-by [:bin])
+      (tc/aggregate {:predicted-probability #(tcc/mean (:probability %))
+                     :observed-rate #(tcc/mean (:actual %))})
+      (plotly/base {:=title "Calibration curve"
+                    :=x :predicted-probability
+                    :=y :observed-rate})
+      plotly/layer-line
+      plotly/layer-point
+      plotly/plot))
+
+(defn diagnostic-plots
+  "Show ROC, precision–recall, and calibration curves
+  for a binary classifier."
+  [actuals probabilities]
+  (kind/fragment
+   [(plot-roc-curve actuals probabilities)
+    (plot-pr-curve actuals probabilities)
+    (plot-calibration actuals probabilities)]))
+
 ;; ## Experiment runners
 ;;
 ;; Each function loads data, runs the experiment, and returns
@@ -362,6 +427,25 @@ within-site-metrics
  #(and (= 3 (tc/row-count %))
        (every? pos? (:accuracy %))))
 
+;; ### Diagnostic curves (within-site, 50 rounds)
+;;
+;; The curves below visualize the 50-round classifier
+;; in more detail than a single ROCAUC number.
+
+(def within-site-plot-data
+  (when eval-results
+    (let [test-actuals (:ri (:test (first holdout-splits)))
+          ;; 50-round pipeline is index 1
+          r (first (nth eval-results 1))
+          prob-dist (get-in r [:test-transform :probability-distribution])]
+      (when prob-dist
+        {:actuals (vec test-actuals)
+         :probabilities (vec (get prob-dist 1))}))))
+
+(when within-site-plot-data
+  (diagnostic-plots (:actuals within-site-plot-data)
+                    (:probabilities within-site-plot-data)))
+
 ;; Release large Phase 1 intermediates (each ~48 MB)
 ;; so they can be garbage-collected before the sweeps.
 (def example-ml-data nil)
@@ -378,14 +462,34 @@ within-site-metrics
 ;; We compose two independently cached datasets as train
 ;; and test, instead of splitting one dataset randomly.
 
-(def cross-year-example
-  (run-cross-year {:species bacteria/E-coli
-                   :antibiotic :Cefepime
-                   :site :A
-                   :train-year 2017
-                   :test-year 2018}))
+(def cross-year-result
+  (let [train-data (get-ml-data {:site :A :year 2017
+                                 :species bacteria/E-coli
+                                 :antibiotic :Cefepime})
+        test-data (get-ml-data {:site :A :year 2018
+                                :species bacteria/E-coli
+                                :antibiotic :Cefepime})]
+    (when (and train-data test-data)
+      (let [pipe (make-pipeline {:rounds 50})
+            fitted (mm/fit-pipe train-data pipe)
+            predicted (mm/transform-pipe test-data pipe fitted)
+            pred-ds (:metamorph/data predicted)
+            test-actuals (:ri test-data)
+            prob-col (get pred-ds 1)]
+        {:n-train (tc/row-count train-data)
+         :n-test (tc/row-count test-data)
+         :ROCAUC (compute-rocauc test-actuals prob-col)
+         :actuals (vec test-actuals)
+         :probabilities (vec prob-col)}))))
 
-cross-year-example
+(when cross-year-result
+  (select-keys cross-year-result [:n-train :n-test :ROCAUC]))
+
+;; ### Diagnostic curves (cross-year)
+
+(when cross-year-result
+  (diagnostic-plots (:actuals cross-year-result)
+                    (:probabilities cross-year-result)))
 
 ;; ### Within-year vs cross-year
 
@@ -399,9 +503,9 @@ cross-year-example
        within
        (conj {:experiment "within-year holdout (A 2018)"
               :ROCAUC (:ROCAUC within)})
-       (:ROCAUC cross-year-example)
+       (:ROCAUC cross-year-result)
        (conj {:experiment "cross-year (A 2017→2018)"
-              :ROCAUC (:ROCAUC cross-year-example)})))))
+              :ROCAUC (:ROCAUC cross-year-result)})))))
 
 year-comparison
 
@@ -415,14 +519,34 @@ year-comparison
 ;; Not every site has data for every combination.
 ;; The runner reports `:status` so we can trace why.
 
-(def cross-site-example
-  (run-cross-site {:species bacteria/E-coli
-                   :antibiotic :Cefepime
-                   :train-site :A
-                   :test-site :C
-                   :year 2018}))
+(def cross-site-result
+  (let [train-data (get-ml-data {:site :A :year 2018
+                                 :species bacteria/E-coli
+                                 :antibiotic :Cefepime})
+        test-data (get-ml-data {:site :C :year 2018
+                                :species bacteria/E-coli
+                                :antibiotic :Cefepime})]
+    (when (and train-data test-data)
+      (let [pipe (make-pipeline {:rounds 50})
+            fitted (mm/fit-pipe train-data pipe)
+            predicted (mm/transform-pipe test-data pipe fitted)
+            pred-ds (:metamorph/data predicted)
+            test-actuals (:ri test-data)
+            prob-col (get pred-ds 1)]
+        {:n-train (tc/row-count train-data)
+         :n-test (tc/row-count test-data)
+         :ROCAUC (compute-rocauc test-actuals prob-col)
+         :actuals (vec test-actuals)
+         :probabilities (vec prob-col)}))))
 
-cross-site-example
+(when cross-site-result
+  (select-keys cross-site-result [:n-train :n-test :ROCAUC]))
+
+;; ### Diagnostic curves (cross-site)
+
+(when cross-site-result
+  (diagnostic-plots (:actuals cross-site-result)
+                    (:probabilities cross-site-result)))
 
 ;; ### All three experiment types compared
 
@@ -436,12 +560,12 @@ cross-site-example
        within
        (conj {:experiment "within-site (A 2018)"
               :ROCAUC (:ROCAUC within)})
-       (:ROCAUC cross-year-example)
+       (:ROCAUC cross-year-result)
        (conj {:experiment "cross-year (A 2017→2018)"
-              :ROCAUC (:ROCAUC cross-year-example)})
-       (:ROCAUC cross-site-example)
+              :ROCAUC (:ROCAUC cross-year-result)})
+       (:ROCAUC cross-site-result)
        (conj {:experiment "cross-site (A→C 2018)"
-              :ROCAUC (:ROCAUC cross-site-example)})))))
+              :ROCAUC (:ROCAUC cross-site-result)})))))
 
 split-comparison
 
