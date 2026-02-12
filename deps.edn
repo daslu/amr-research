@@ -14,5 +14,5 @@
                                 :git/sha "9e35c979860c75555adaff7600070c60004a0f44"}}
                   :main-opts ["-m" "cognitect.test-runner"
                               "-d" "test"]}}
- :jvm-opts ["-Xmx28g"]
+ :jvm-opts ["-Xmx50g"]
  :paths ["src" "notebooks"]}

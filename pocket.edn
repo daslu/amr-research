@@ -1,0 +1,6 @@
+;; Pocket cache configuration for AMR project.
+;; Cache lives outside Dropbox to avoid syncing ~15GB.
+;; Each cached ML dataset is ~48 MB (6001 columns),
+;; so a low LRU threshold avoids excessive memory use.
+{:base-cache-dir "/workspace/.cache/pocket"
+ :mem-cache {:policy :lru :threshold 8}}
