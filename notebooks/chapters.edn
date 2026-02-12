@@ -2,5 +2,6 @@
  "Preprocessing"         ["preprocessing_explained"
                           "preprocessing_driams"]
  "Prediction Pipeline"   ["single_prediction"
-                          "caching_and_scenarios"]
+                          "caching_and_scenarios"
+                          "experiment_variations"]
  "Full Walkthrough"      ["ml_pipeline_walkthrough"]}
