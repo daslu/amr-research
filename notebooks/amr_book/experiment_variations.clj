@@ -18,6 +18,10 @@
   (:require
    ;; AMR ML pipeline (prepare, train, predict, measure):
    [scicloj.amr.learning :as learning]
+   ;; Experiment runners (within-site, cross-year, cross-site):
+   [scicloj.amr.scenarios :as scenarios]
+   ;; Diagnostic plots (ROC, PR, calibration):
+   [scicloj.amr.visualization :as viz]
    ;; Bacterial species definitions:
    [scicloj.amr.data.bacteria :as bacteria]
    ;; Pocket filesystem caching (https://github.com/scicloj/pocket):
@@ -28,18 +32,12 @@
    [scicloj.metamorph.ml.loss :as loss]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
-   [tablecloth.column.api :as tcc]
-   ;; Dataset modelling and column filters:
-   [tech.v3.dataset.modelling :as ds-mod]
-   [tech.v3.dataset.column-filters :as cf]
    ;; Interactive plotting (https://scicloj.github.io/tableplot/):
    [scicloj.tableplot.v1.plotly :as plotly]
    ;; Annotating kinds of visualizations:
    [scicloj.kindly.v4.kind :as kind]
    ;; EDN reader:
-   [clojure.edn :as edn])
-  (:import
-   (org.tribuo.classification.evaluation LabelEvaluationUtil)))
+   [clojure.edn :as edn]))
 
 ;; ## Shared parameters
 ;;
@@ -57,306 +55,6 @@
   (pocket/set-base-cache-dir! (:base-cache-dir cfg))
   (pocket/set-mem-cache-options! (:mem-cache cfg)))
 
-(def ml-params
-  {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
-   :binning-params {:range [2000 20000] :step 3}})
-
-;; ## Species and antibiotics
-;;
-;; The 23 species–antibiotic combinations from the paper:
-
-(def species->antibiotics
-  {bacteria/E-coli
-   [:Meropenem :Ertapenem :Ceftriaxone :Cefepime
-    :Piperacillin-Tazobactam :Nitrofurantoin
-    :Ciprofloxacin :Cotrimoxazole]
-
-   bacteria/S-aureus
-   [:Cotrimoxazole :Clindamycin :Vancomycin :Linezolid
-    (keyword "Amoxicillin-Clavulanic acid")
-    (keyword "Ampicillin-Amoxicillin")
-    :Oxacillin]
-
-   bacteria/P-aeruginosa
-   [:Piperacillin-Tazobactam :Cefepime :Ceftazidime
-    :Meropenem :Amikacin :Ciprofloxacin
-    :Colistin :Tobramycin]})
-
-;; ## Helpers
-;;
-;; `get-ml-data` loads and caches one (species, antibiotic,
-;; site, year) scenario. The `:ri` column is converted from
-;; boolean to integer 0/1 for compatibility with
-;; `evaluate-pipelines`.
-
-(defn get-ml-data
-  "Get cached, preprocessed ML data for one scenario.
-  Returns nil if the data is unavailable."
-  [{:keys [site year species antibiotic]}]
-  (try
-    (some-> {:site site :year year
-             :species species :antibiotic antibiotic}
-            learning/prepare-raw-data-cached
-            (learning/prepare-ml-data-cached ml-params)
-            deref
-            (tc/map-columns :ri [:ri] #(if % 1 0))
-            (ds-mod/set-inference-target :ri))
-    (catch Exception _e nil)))
-
-;; ## The `pocket-model` step
-;;
-;; A metamorph.ml pipeline step that wraps `ml/train` with
-;; `pocket/cached` — a drop-in replacement for `ml/model`
-;; that persists trained models to disk.
-;;
-;; Adapted from the
-;; [Pocket ML pipelines tutorial](https://scicloj.github.io/pocket/pocket_book.ml_pipelines.html).
-
-(defn pocket-model
-  "Like `ml/model`, but caches `ml/train` through Pocket.
-  In :fit mode, wraps ml/train with pocket/cached.
-  In :transform mode, calls ml/predict directly."
-  [options]
-  (fn [{:metamorph/keys [id data mode] :as ctx}]
-    (case mode
-      :fit
-      (let [model (deref (pocket/cached #'ml/train data options))]
-        (assoc ctx id (assoc model ::ml/unsupervised? false)))
-      :transform
-      (-> ctx
-          (update id assoc
-                  ::ml/feature-ds (cf/feature data)
-                  ::ml/target-ds (cf/target data))
-          (assoc :metamorph/data (ml/predict data (get ctx id)))))))
-
-(defn make-pipeline
-  "Build an XGBoost classification pipeline with pocket-cached training."
-  [{:keys [rounds] :or {rounds 50}}]
-  (mm/pipeline
-   {:metamorph/id :model}
-   (pocket-model {:model-type :xgboost/classification
-                  :round rounds
-                  :num-class 2})))
-
-;; ## Metrics
-
-(defn compute-rocauc
-  "Compute ROCAUC from actual labels (int 0/1) and
-  probability predictions. Returns nil when ROCAUC
-  is undefined (e.g. single-class test data)."
-  [actuals prob-col]
-  (try
-    (let [v (LabelEvaluationUtil/binaryAUCROC
-             (boolean-array (mapv pos? actuals))
-             (double-array prob-col))]
-      (when-not (Double/isNaN v) v))
-    (catch Exception _e nil)))
-
-(defn evaluate-cross-split
-  "Train a pipeline on `train-data`, predict on `test-data`,
-  and return metrics. Returns nil on failure."
-  [pipeline train-data test-data]
-  (try
-    (let [fitted-ctx (mm/fit-pipe train-data pipeline)
-          predicted-ctx (mm/transform-pipe test-data pipeline fitted-ctx)
-          pred-ds (:metamorph/data predicted-ctx)]
-      {:n-train (tc/row-count train-data)
-       :n-test (tc/row-count test-data)
-       :ROCAUC (compute-rocauc (:ri test-data) (get pred-ds 1))})
-    (catch Exception _e nil)))
-
-;; ## Diagnostic plots
-;;
-;; Per-scenario
-;; [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic),
-;; [precision–recall](https://en.wikipedia.org/wiki/Precision_and_recall),
-;; and [calibration](https://en.wikipedia.org/wiki/Calibration_(statistics))
-;; curves.
-
-(defn plot-roc-curve
-  "Plot the ROC curve (TPR vs FPR)."
-  [actuals probabilities]
-  (let [curve (LabelEvaluationUtil/generateROCCurve
-               (boolean-array (mapv pos? actuals))
-               (double-array probabilities))]
-    (-> {:fpr (vec (.fpr curve))
-         :tpr (vec (.tpr curve))}
-        tc/dataset
-        (plotly/base {:=title "ROC curve"
-                      :=x :fpr :=y :tpr})
-        plotly/layer-line
-        plotly/plot)))
-
-(defn plot-pr-curve
-  "Plot the precision–recall curve."
-  [actuals probabilities]
-  (let [curve (LabelEvaluationUtil/generatePRCurve
-               (boolean-array (mapv pos? actuals))
-               (double-array probabilities))]
-    (-> {:recall (vec (.recall curve))
-         :precision (vec (.precision curve))}
-        tc/dataset
-        (plotly/base {:=title "Precision–Recall curve"
-                      :=x :recall :=y :precision})
-        plotly/layer-line
-        plotly/plot)))
-
-(defn plot-calibration
-  "Plot predicted probability vs observed resistance rate.
-  Samples are sorted by predicted probability and grouped
-  into bins of 30."
-  [actuals probabilities]
-  (-> {:probability probabilities :actual actuals}
-      tc/dataset
-      (tc/order-by :probability)
-      (tc/add-column :i (range))
-      (tc/map-columns :bin [:i] #(quot % 30))
-      (tc/group-by [:bin])
-      (tc/aggregate {:predicted-probability #(tcc/mean (:probability %))
-                     :observed-rate #(tcc/mean (:actual %))})
-      (plotly/base {:=title "Calibration curve"
-                    :=x :predicted-probability
-                    :=y :observed-rate})
-      plotly/layer-line
-      plotly/layer-point
-      plotly/plot))
-
-(defn diagnostic-plots
-  "Show ROC, precision–recall, and calibration curves
-  for a binary classifier."
-  [actuals probabilities]
-  (kind/fragment
-   [(plot-roc-curve actuals probabilities)
-    (plot-pr-curve actuals probabilities)
-    (plot-calibration actuals probabilities)]))
-
-;; ## Experiment runners
-;;
-;; Each function loads data, runs the experiment, and returns
-;; a small metrics map. The large datasets are not retained
-;; in top-level defs.
-;;
-;; Every result includes a `:status` key:
-;; - `:ok` — experiment ran and produced a ROCAUC
-;; - `:no-data` — one or both datasets missing
-;; - `:too-few` — not enough samples
-;; - `:single-class` — test set has only one class (ROCAUC undefined)
-;; - `:error` — unexpected failure (message included)
-
-(defn run-within-site
-  "Within-site holdout experiment."
-  [{:keys [species antibiotic site year rounds]
-    :or {rounds 50}}]
-  (let [base {:species species :antibiotic antibiotic
-              :site site :year year
-              :experiment :within-site}]
-    (try
-      (let [ml-data (get-ml-data {:site site :year year
-                                  :species species
-                                  :antibiotic antibiotic})]
-        (cond
-          (nil? ml-data)
-          (assoc base :status :no-data)
-
-          (< (tc/row-count ml-data) 100)
-          (assoc base :status :too-few
-                 :n-total (tc/row-count ml-data))
-
-          :else
-          (let [split (first (tc/split->seq ml-data :holdout {:seed 1}))
-                pipe (make-pipeline {:rounds rounds})
-                fitted (mm/fit-pipe (:train split) pipe)
-                predicted (mm/transform-pipe (:test split) pipe fitted)
-                pred-ds (:metamorph/data predicted)
-                rocauc (compute-rocauc (:ri (:test split))
-                                       (get pred-ds 1))]
-            (merge base
-                   {:n-train (tc/row-count (:train split))
-                    :n-test (tc/row-count (:test split))
-                    :ROCAUC rocauc
-                    :status (if rocauc :ok :single-class)}))))
-      (catch Exception e
-        (assoc base :status :error
-               :message (.getMessage e))))))
-
-(defn run-cross-year
-  "Train on train-year, test on test-year."
-  [{:keys [species antibiotic site train-year test-year rounds]
-    :or {rounds 50}}]
-  (let [base {:species species :antibiotic antibiotic
-              :site site
-              :train-year train-year :test-year test-year
-              :experiment :cross-year}]
-    (try
-      (let [train-data (get-ml-data {:site site :year train-year
-                                     :species species
-                                     :antibiotic antibiotic})
-            test-data (get-ml-data {:site site :year test-year
-                                    :species species
-                                    :antibiotic antibiotic})]
-        (cond
-          (nil? train-data)
-          (assoc base :status :no-data :detail :no-train)
-
-          (nil? test-data)
-          (assoc base :status :no-data :detail :no-test)
-
-          (< (tc/row-count train-data) 50)
-          (assoc base :status :too-few
-                 :n-train (tc/row-count train-data))
-
-          (< (tc/row-count test-data) 50)
-          (assoc base :status :too-few
-                 :n-test (tc/row-count test-data))
-
-          :else
-          (let [result (evaluate-cross-split (make-pipeline {:rounds rounds})
-                                             train-data test-data)]
-            (merge base result
-                   {:status (if (:ROCAUC result) :ok :single-class)}))))
-      (catch Exception e
-        (assoc base :status :error
-               :message (.getMessage e))))))
-
-(defn run-cross-site
-  "Train on train-site, test on test-site."
-  [{:keys [species antibiotic train-site test-site year rounds]
-    :or {rounds 50}}]
-  (let [base {:species species :antibiotic antibiotic
-              :train-site train-site :test-site test-site
-              :year year
-              :experiment :cross-site}]
-    (try
-      (let [train-data (get-ml-data {:site train-site :year year
-                                     :species species
-                                     :antibiotic antibiotic})
-            test-data (get-ml-data {:site test-site :year year
-                                    :species species
-                                    :antibiotic antibiotic})]
-        (cond
-          (nil? train-data)
-          (assoc base :status :no-data :detail :no-train)
-
-          (nil? test-data)
-          (assoc base :status :no-data :detail :no-test)
-
-          (< (tc/row-count train-data) 50)
-          (assoc base :status :too-few
-                 :n-train (tc/row-count train-data))
-
-          (< (tc/row-count test-data) 50)
-          (assoc base :status :too-few
-                 :n-test (tc/row-count test-data))
-
-          :else
-          (let [result (evaluate-cross-split (make-pipeline {:rounds rounds})
-                                             train-data test-data)]
-            (merge base result
-                   {:status (if (:ROCAUC result) :ok :single-class)}))))
-      (catch Exception e
-        (assoc base :status :error
-               :message (.getMessage e))))))
-
 ;; ---
 
 ;; ## Part 1 — Within-site holdout
@@ -371,9 +69,9 @@
 ;; takes minutes; subsequent calls return instantly.
 
 (def example-ml-data
-  (get-ml-data {:site :A :year 2018
-                :species bacteria/E-coli
-                :antibiotic :Cefepime}))
+  (learning/get-ml-data {:site :A :year 2018
+                         :species bacteria/E-coli
+                         :antibiotic :Cefepime}))
 
 (when example-ml-data
   {:rows (tc/row-count example-ml-data)
@@ -393,7 +91,7 @@
 (def eval-results
   (when holdout-splits
     (ml/evaluate-pipelines
-     (mapv #(make-pipeline {:rounds %}) xgboost-round-values)
+     (mapv #(learning/make-pipeline {:rounds %}) xgboost-round-values)
      holdout-splits
      loss/classification-accuracy
      :accuracy
@@ -407,7 +105,7 @@
   [eval-entry test-actuals]
   (let [prob-dist (get-in eval-entry [:test-transform :probability-distribution])]
     (when prob-dist
-      (compute-rocauc test-actuals (get prob-dist 1)))))
+      (learning/compute-rocauc test-actuals (get prob-dist 1)))))
 
 (def within-site-metrics
   (when eval-results
@@ -443,8 +141,8 @@ within-site-metrics
          :probabilities (vec (get prob-dist 1))}))))
 
 (when within-site-plot-data
-  (diagnostic-plots (:actuals within-site-plot-data)
-                    (:probabilities within-site-plot-data)))
+  (viz/diagnostic-plots (:actuals within-site-plot-data)
+                        (:probabilities within-site-plot-data)))
 
 ;; Release large Phase 1 intermediates (each ~48 MB)
 ;; so they can be garbage-collected before the sweeps.
@@ -463,14 +161,14 @@ within-site-metrics
 ;; and test, instead of splitting one dataset randomly.
 
 (def cross-year-result
-  (let [train-data (get-ml-data {:site :A :year 2017
-                                 :species bacteria/E-coli
-                                 :antibiotic :Cefepime})
-        test-data (get-ml-data {:site :A :year 2018
-                                :species bacteria/E-coli
-                                :antibiotic :Cefepime})]
+  (let [train-data (learning/get-ml-data {:site :A :year 2017
+                                          :species bacteria/E-coli
+                                          :antibiotic :Cefepime})
+        test-data (learning/get-ml-data {:site :A :year 2018
+                                         :species bacteria/E-coli
+                                         :antibiotic :Cefepime})]
     (when (and train-data test-data)
-      (let [pipe (make-pipeline {:rounds 50})
+      (let [pipe (learning/make-pipeline {:rounds 50})
             fitted (mm/fit-pipe train-data pipe)
             predicted (mm/transform-pipe test-data pipe fitted)
             pred-ds (:metamorph/data predicted)
@@ -478,7 +176,7 @@ within-site-metrics
             prob-col (get pred-ds 1)]
         {:n-train (tc/row-count train-data)
          :n-test (tc/row-count test-data)
-         :ROCAUC (compute-rocauc test-actuals prob-col)
+         :ROCAUC (learning/compute-rocauc test-actuals prob-col)
          :actuals (vec test-actuals)
          :probabilities (vec prob-col)}))))
 
@@ -488,8 +186,8 @@ within-site-metrics
 ;; ### Diagnostic curves (cross-year)
 
 (when cross-year-result
-  (diagnostic-plots (:actuals cross-year-result)
-                    (:probabilities cross-year-result)))
+  (viz/diagnostic-plots (:actuals cross-year-result)
+                        (:probabilities cross-year-result)))
 
 ;; ### Within-year vs cross-year
 
@@ -520,14 +218,14 @@ year-comparison
 ;; The runner reports `:status` so we can trace why.
 
 (def cross-site-result
-  (let [train-data (get-ml-data {:site :A :year 2018
-                                 :species bacteria/E-coli
-                                 :antibiotic :Cefepime})
-        test-data (get-ml-data {:site :C :year 2018
-                                :species bacteria/E-coli
-                                :antibiotic :Cefepime})]
+  (let [train-data (learning/get-ml-data {:site :A :year 2018
+                                          :species bacteria/E-coli
+                                          :antibiotic :Cefepime})
+        test-data (learning/get-ml-data {:site :C :year 2018
+                                         :species bacteria/E-coli
+                                         :antibiotic :Cefepime})]
     (when (and train-data test-data)
-      (let [pipe (make-pipeline {:rounds 50})
+      (let [pipe (learning/make-pipeline {:rounds 50})
             fitted (mm/fit-pipe train-data pipe)
             predicted (mm/transform-pipe test-data pipe fitted)
             pred-ds (:metamorph/data predicted)
@@ -535,7 +233,7 @@ year-comparison
             prob-col (get pred-ds 1)]
         {:n-train (tc/row-count train-data)
          :n-test (tc/row-count test-data)
-         :ROCAUC (compute-rocauc test-actuals prob-col)
+         :ROCAUC (learning/compute-rocauc test-actuals prob-col)
          :actuals (vec test-actuals)
          :probabilities (vec prob-col)}))))
 
@@ -545,8 +243,8 @@ year-comparison
 ;; ### Diagnostic curves (cross-site)
 
 (when cross-site-result
-  (diagnostic-plots (:actuals cross-site-result)
-                    (:probabilities cross-site-result)))
+  (viz/diagnostic-plots (:actuals cross-site-result)
+                        (:probabilities cross-site-result)))
 
 ;; ### All three experiment types compared
 
@@ -590,11 +288,11 @@ split-comparison
 ;; ### E. coli — within-site (site A, 2018)
 
 (def ecoli-within
-  (->> (get species->antibiotics bacteria/E-coli)
+  (->> (get bacteria/species->antibiotics bacteria/E-coli)
        (mapv (fn [ab]
-               (run-within-site {:species bacteria/E-coli
-                                 :antibiotic ab
-                                 :site :A :year 2018})))
+               (scenarios/run-within-site {:species bacteria/E-coli
+                                           :antibiotic ab
+                                           :site :A :year 2018})))
        tc/dataset))
 
 (-> ecoli-within
@@ -603,13 +301,13 @@ split-comparison
 ;; ### E. coli — cross-year (A: 2017→2018)
 
 (def ecoli-cross-year
-  (->> (get species->antibiotics bacteria/E-coli)
+  (->> (get bacteria/species->antibiotics bacteria/E-coli)
        (mapv (fn [ab]
-               (run-cross-year {:species bacteria/E-coli
-                                :antibiotic ab
-                                :site :A
-                                :train-year 2017
-                                :test-year 2018})))
+               (scenarios/run-cross-year {:species bacteria/E-coli
+                                          :antibiotic ab
+                                          :site :A
+                                          :train-year 2017
+                                          :test-year 2018})))
        tc/dataset))
 
 (-> ecoli-cross-year
@@ -618,13 +316,13 @@ split-comparison
 ;; ### E. coli — cross-site (A→C, 2018)
 
 (def ecoli-cross-site
-  (->> (get species->antibiotics bacteria/E-coli)
+  (->> (get bacteria/species->antibiotics bacteria/E-coli)
        (mapv (fn [ab]
-               (run-cross-site {:species bacteria/E-coli
-                                :antibiotic ab
-                                :train-site :A
-                                :test-site :C
-                                :year 2018})))
+               (scenarios/run-cross-site {:species bacteria/E-coli
+                                          :antibiotic ab
+                                          :train-site :A
+                                          :test-site :C
+                                          :year 2018})))
        tc/dataset))
 
 (-> ecoli-cross-site
@@ -671,4 +369,3 @@ ecoli-combined
       plotly/layer-point
       plotly/plot
       (assoc-in [:layout :xaxis :tickangle] -45)))
-

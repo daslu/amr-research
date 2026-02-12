@@ -5,8 +5,10 @@
             [tech.v3.parallel.for :as pfor]
             [tech.v3.datatype :as dtype]
             [tech.v3.tensor :as tensor]
+            [scicloj.metamorph.core :as mm]
             [scicloj.metamorph.ml :as ml]
             [tech.v3.dataset.modelling :as ds-mod]
+            [tech.v3.dataset.column-filters :as cf]
             [scicloj.amr.data.bacteria :as bacteria]
             [scicloj.ml.xgboost]
             [scicloj.pocket :as pocket]
@@ -215,3 +217,68 @@
          (measure-cached split-data)
          deref
          time)))
+
+;; ## Default parameters
+;;
+;; Preprocessing and binning parameters matching the Weis et al. paper.
+
+(def default-ml-params
+  {:preprocessing-params {:smooth-window 21 :smooth-polynomial 3}
+   :binning-params {:range [2000 20000] :step 3}})
+
+;; ## Higher-level helpers
+
+(defn get-ml-data
+  "Get cached, preprocessed ML data for one scenario.
+  Returns nil if the data is unavailable.
+  The :ri column is converted from boolean to integer 0/1
+  for compatibility with evaluate-pipelines."
+  ([params] (get-ml-data params default-ml-params))
+  ([{:keys [site year species antibiotic]} ml-params]
+   (try
+     (some-> {:site site :year year
+              :species species :antibiotic antibiotic}
+             prepare-raw-data-cached
+             (prepare-ml-data-cached ml-params)
+             deref
+             (tc/map-columns :ri [:ri] #(if % 1 0))
+             (ds-mod/set-inference-target :ri))
+     (catch Exception _e nil))))
+
+(defn compute-rocauc
+  "Compute ROCAUC from actual labels (int 0/1) and
+  probability predictions. Returns nil when ROCAUC
+  is undefined (e.g. single-class test data)."
+  [actuals prob-col]
+  (try
+    (let [v (LabelEvaluationUtil/binaryAUCROC
+             (boolean-array (mapv pos? actuals))
+             (double-array prob-col))]
+      (when-not (Double/isNaN v) v))
+    (catch Exception _e nil)))
+
+(defn pocket-model
+  "Like `ml/model`, but caches `ml/train` through Pocket.
+  In :fit mode, wraps ml/train with pocket/cached.
+  In :transform mode, calls ml/predict directly."
+  [options]
+  (fn [{:metamorph/keys [id data mode] :as ctx}]
+    (case mode
+      :fit
+      (let [model (deref (pocket/cached #'ml/train data options))]
+        (assoc ctx id (assoc model ::ml/unsupervised? false)))
+      :transform
+      (-> ctx
+          (update id assoc
+                  ::ml/feature-ds (cf/feature data)
+                  ::ml/target-ds (cf/target data))
+          (assoc :metamorph/data (ml/predict data (get ctx id)))))))
+
+(defn make-pipeline
+  "Build an XGBoost classification pipeline with pocket-cached training."
+  [{:keys [rounds] :or {rounds 50}}]
+  (mm/pipeline
+   {:metamorph/id :model}
+   (pocket-model {:model-type :xgboost/classification
+                  :round rounds
+                  :num-class 2})))
