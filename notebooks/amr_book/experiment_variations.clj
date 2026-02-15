@@ -1,3 +1,4 @@
+
 ;; # Experiment Variations
 ;;
 ;; This notebook runs many variations of
@@ -12,7 +13,9 @@
 ;; 1. **Within-site holdout** — one scenario, multiple XGBoost configs
 ;; 2. **Cross-year** — train on one year, test on another
 ;; 3. **Cross-site** — train on one hospital, test on another
-;; 4. **Sweep** — multiple antibiotics across experiment types
+;; 4. **Multi-species sweep** — all species and antibiotics
+;; 5. **Bidirectional cross-site** — A→C vs C→A transfer
+;; 6. **K-fold cross-validation** — robust estimates with standard deviations
 
 (ns amr-book.experiment-variations
   (:require
@@ -32,6 +35,8 @@
    [scicloj.metamorph.ml.loss :as loss]
    ;; Table processing (https://scicloj.github.io/tablecloth/):
    [tablecloth.api :as tc]
+   ;; Column-level operations:
+   [tablecloth.column.api :as tcc]
    ;; Interactive plotting (https://scicloj.github.io/tableplot/):
    [scicloj.tableplot.v1.plotly :as plotly]
    ;; Annotating kinds of visualizations:
@@ -188,21 +193,18 @@ within-site-metrics
 
 ;; ### Within-year vs cross-year
 
-(def year-comparison
-  (let [within (some-> within-site-metrics
-                       (tc/select-rows #(= 50 (:rounds %)))
-                       (tc/rows :as-maps)
-                       first)]
-    (tc/dataset
-     (cond-> []
-       within
-       (conj {:experiment "within-year holdout (A 2018)"
-              :ROCAUC (:ROCAUC within)})
-       (:ROCAUC cross-year-result)
-       (conj {:experiment "cross-year (A 2017→2018)"
-              :ROCAUC (:ROCAUC cross-year-result)})))))
-
-year-comparison
+(let [within (some-> within-site-metrics
+                     (tc/select-rows #(= 50 (:rounds %)))
+                     (tc/rows :as-maps)
+                     first)]
+  (tc/dataset
+   (cond-> []
+     within
+     (conj {:experiment "within-year holdout (A 2018)"
+            :ROCAUC (:ROCAUC within)})
+     (:ROCAUC cross-year-result)
+     (conj {:experiment "cross-year (A 2017→2018)"
+            :ROCAUC (:ROCAUC cross-year-result)}))))
 
 ;; ---
 
@@ -245,131 +247,297 @@ year-comparison
 
 ;; ### All three experiment types compared
 
-(def split-comparison
-  (let [within (some-> within-site-metrics
-                       (tc/select-rows #(= 50 (:rounds %)))
-                       (tc/rows :as-maps)
-                       first)]
-    (tc/dataset
-     (cond-> []
-       within
-       (conj {:experiment "within-site (A 2018)"
-              :ROCAUC (:ROCAUC within)})
-       (:ROCAUC cross-year-result)
-       (conj {:experiment "cross-year (A 2017→2018)"
-              :ROCAUC (:ROCAUC cross-year-result)})
-       (:ROCAUC cross-site-result)
-       (conj {:experiment "cross-site (A→C 2018)"
-              :ROCAUC (:ROCAUC cross-site-result)})))))
+(let [within (some-> within-site-metrics
+                     (tc/select-rows #(= 50 (:rounds %)))
+                     (tc/rows :as-maps)
+                     first)]
+  (tc/dataset
+   (cond-> []
+     within
+     (conj {:experiment "within-site (A 2018)"
+            :ROCAUC (:ROCAUC within)})
+     (:ROCAUC cross-year-result)
+     (conj {:experiment "cross-year (A 2017→2018)"
+            :ROCAUC (:ROCAUC cross-year-result)})
+     (:ROCAUC cross-site-result)
+     (conj {:experiment "cross-site (A→C 2018)"
+            :ROCAUC (:ROCAUC cross-site-result)}))))
 
-split-comparison
-
-;; The pattern is clear: within-site holdout performs best,
-;; cross-year is close behind, and cross-site shows the
-;; largest drop — the model relies partly on hospital-specific
-;; spectral patterns.
-;;
-;; Note that the within-site experiment trains on ~75% of the
-;; 2018 data, while cross-year and cross-site train on the
-;; full dataset of the source year/site. The performance drop
-;; from cross-transfer occurs despite having *more* training
-;; data — distribution shift, not data scarcity, is the
-;; dominant factor.
+;; Note: the within-site experiment uses a holdout split,
+;; while cross-year and cross-site use the full source
+;; dataset for training.
 
 ;; ---
 
-;; ## Part 4 — Sweeping across antibiotics
+;; ## Part 4 — Sweeping across species and antibiotics
 ;;
-;; Now we scale up to multiple antibiotics for E. coli,
-;; comparing all three experiment types side by side.
-;; The expensive spectra preprocessing is cached by Pocket,
-;; so rerunning this section is fast.
+;; We scale up to all three species in
+;; [Weis et al.](https://doi.org/10.1038/s41591-021-01619-9),
+;; running three experiment types for each species–antibiotic
+;; combination. Every result carries a `:status` so we can
+;; distinguish successful experiments from insufficient data.
+
+;; ### Helper: sweep one species
+
+(defn sweep-species
+  "Run within-site, cross-year, and cross-site experiments
+  for all antibiotics of a given species. Returns a dataset."
+  [species]
+  (let [antibiotics (get bacteria/species->antibiotics species)]
+    (->> (concat
+          (mapv (fn [ab]
+                  (scenarios/run-within-site {:species species
+                                              :antibiotic ab
+                                              :site :A :year 2018}))
+                antibiotics)
+          (mapv (fn [ab]
+                  (scenarios/run-cross-year {:species species
+                                             :antibiotic ab
+                                             :site :A
+                                             :train-year 2017
+                                             :test-year 2018}))
+                antibiotics)
+          (mapv (fn [ab]
+                  (scenarios/run-cross-site {:species species
+                                             :antibiotic ab
+                                             :train-site :A
+                                             :test-site :C
+                                             :year 2018}))
+                antibiotics))
+         tc/dataset)))
+
+;; ### Running the sweep
+
+(def sweep-species-list
+  [bacteria/E-coli bacteria/S-aureus bacteria/P-aeruginosa])
+
+(def all-sweep-results
+  (->> sweep-species-list
+       (mapv sweep-species)
+       (apply tc/concat)))
+
+{:rows (tc/row-count all-sweep-results)
+ :columns (count (tc/column-names all-sweep-results))}
+
+;; ### Status summary
+
+(-> all-sweep-results
+    (tc/group-by [:species :experiment :status])
+    (tc/aggregate {:count tc/row-count})
+    (tc/order-by [:species :experiment :status]))
+
+;; ### Per-species results
 ;;
-;; Every result carries a `:status` so we can distinguish
-;; successful experiments from insufficient data, single-class
-;; test sets, or unexpected errors.
+;; The `:ok` rows contain valid ROCAUC values. Other
+;; statuses indicate data limitations (too few samples,
+;; no data at the test site, or single-class test sets).
 
-;; ### E. coli — within-site (site A, 2018)
+(def ok-results
+  (-> all-sweep-results
+      (tc/select-rows #(= :ok (:status %)))
+      (tc/select-columns [:species :antibiotic :experiment :ROCAUC])
+      (tc/map-columns :experiment [:experiment] name)))
 
-(def ecoli-within
-  (->> (get bacteria/species->antibiotics bacteria/E-coli)
-       (mapv (fn [ab]
-               (scenarios/run-within-site {:species bacteria/E-coli
-                                           :antibiotic ab
-                                           :site :A :year 2018})))
+ok-results
+
+;; ### Mean ROCAUC by species and experiment type
+
+(def species-experiment-summary
+  (-> ok-results
+      (tc/group-by [:species :experiment])
+      (tc/aggregate {:mean-ROCAUC #(-> % :ROCAUC tcc/mean)
+                     :count tc/row-count})
+      (tc/order-by [:species :experiment])))
+
+species-experiment-summary
+
+(kind/test-last
+ #(pos? (tc/row-count %)))
+
+;; ### Summary bar chart
+
+(-> species-experiment-summary
+    (plotly/base {:=x :species
+                  :=y :mean-ROCAUC
+                  :=color :experiment
+                  :=title "Mean ROCAUC by species and experiment type"})
+    (plotly/layer-bar {:=mark-opacity 0.8})
+    plotly/plot)
+
+;; ### All individual results
+
+(-> ok-results
+    (plotly/base {:=x :antibiotic
+                  :=y :ROCAUC
+                  :=color :experiment
+                  :=title "ROCAUC — all species and antibiotics"})
+    (plotly/layer-point {:=mark-size 10
+                         :=mark-opacity 0.7})
+    plotly/plot
+    (assoc-in [:layout :xaxis :tickangle] -45))
+
+;; ---
+
+;; ## Part 5 — Bidirectional cross-site transfer
+;;
+;; Part 4 tested A→C transfer. Here we add the
+;; reverse direction (C→A) to see whether transfer
+;; performance is symmetric.
+;;
+;; Sites B and D have no AMR labels for the species
+;; in this study, so cross-site experiments are limited
+;; to the A↔C pair. Similarly, cross-year experiments
+;; are limited to 2017→2018 at site A (2015 and 2016
+;; have metadata that doesn't join with spectra files).
+
+;; ### Helper: reverse cross-site sweep
+
+(defn sweep-cross-site-reverse
+  "Run C→A cross-site experiments for all antibiotics
+  of a given species. Returns a dataset."
+  [species]
+  (let [antibiotics (get bacteria/species->antibiotics species)]
+    (->> antibiotics
+         (mapv (fn [ab]
+                 (scenarios/run-cross-site {:species species
+                                            :antibiotic ab
+                                            :train-site :C
+                                            :test-site :A
+                                            :year 2018})))
+         tc/dataset)))
+
+;; ### Running the reverse sweep
+
+(def all-reverse-results
+  (->> sweep-species-list
+       (mapv sweep-cross-site-reverse)
+       (apply tc/concat)))
+
+(-> all-reverse-results
+    (tc/select-columns [:species :antibiotic :status :n-train :n-test :ROCAUC]))
+
+;; ### Bidirectional comparison
+;;
+;; Combining A→C (from Part 4) and C→A results:
+
+(defn- tag-direction [ds direction-label]
+  (-> ds
+      (tc/select-rows #(= :ok (:status %)))
+      (tc/select-columns [:species :antibiotic :ROCAUC])
+      (tc/add-column :direction direction-label)))
+
+(def bidirectional-results
+  (let [forward (-> all-sweep-results
+                    (tc/select-rows #(= :cross-site (:experiment %))))]
+    (tc/concat
+     (tag-direction forward "A → C")
+     (tag-direction all-reverse-results "C → A"))))
+
+bidirectional-results
+
+;; ### Mean ROCAUC by direction and species
+
+(-> bidirectional-results
+    (tc/group-by [:species :direction])
+    (tc/aggregate {:mean-ROCAUC #(-> % :ROCAUC tcc/mean)
+                   :count tc/row-count})
+    (tc/order-by [:species :direction]))
+
+;; ### Bidirectional comparison plot
+
+(-> bidirectional-results
+    (plotly/base {:=x :antibiotic
+                  :=y :ROCAUC
+                  :=color :direction
+                  :=title "Cross-site ROCAUC — A→C vs C→A"})
+    (plotly/layer-point {:=mark-size 10
+                         :=mark-opacity 0.7})
+    plotly/plot
+    (assoc-in [:layout :xaxis :tickangle] -45))
+
+;; ---
+
+;; ## Part 6 — K-fold cross-validation
+;;
+;; Parts 1–4 use single holdout splits. Here we use
+;; [5-fold cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics))
+;; to get more robust ROCAUC estimates with standard
+;; deviations.
+
+;; ### Helper: one CV fold
+
+(defn- cv-fold-result
+  "Run one fold: fit on train, predict on test, compute ROCAUC."
+  [pipe train-ds test-ds]
+  (try
+    (let [fitted (mm/fit-pipe train-ds pipe)
+          predicted (mm/transform-pipe test-ds pipe fitted)
+          pred-ds (:metamorph/data predicted)
+          test-actuals (:ri test-ds)
+          prob-col (get pred-ds 1)]
+      {:ROCAUC (learning/compute-rocauc test-actuals prob-col)
+       :n-test (tc/row-count test-ds)})
+    (catch Exception _e nil)))
+
+;; ### Helper: k-fold CV for one scenario
+
+(defn run-kfold-cv
+  "Run k-fold cross-validation for one species–antibiotic
+  combination. Returns a map with :mean-ROCAUC and :std-ROCAUC,
+  or nil if data is insufficient."
+  [{:keys [species antibiotic site year k rounds]
+    :or {k 5 rounds 50}}]
+  (let [ml-data (learning/get-ml-data {:site site :year year
+                                       :species species
+                                       :antibiotic antibiotic})]
+    (when (and ml-data (>= (tc/row-count ml-data) 100))
+      (let [splits (tc/split->seq ml-data :kfold {:k k :seed 1})
+            pipe (learning/make-pipeline {:rounds rounds})
+            rocaucs (->> splits
+                         (keep (fn [split]
+                                 (:ROCAUC (cv-fold-result pipe
+                                                          (:train split)
+                                                          (:test split)))))
+                         vec)]
+        (when (> (count rocaucs) 1)
+          {:species species
+           :antibiotic antibiotic
+           :n-folds (count rocaucs)
+           :mean-ROCAUC (tcc/mean rocaucs)
+           :std-ROCAUC (tcc/standard-deviation rocaucs)})))))
+
+;; ### Running the CV sweep
+
+(def cv-results
+  (->> sweep-species-list
+       (mapcat (fn [species]
+                 (->> (get bacteria/species->antibiotics species)
+                      (keep (fn [ab]
+                              (run-kfold-cv {:species species
+                                             :antibiotic ab
+                                             :site :A :year 2018}))))))
        tc/dataset))
 
-(-> ecoli-within
-    (tc/select-columns [:antibiotic :status :n-train :n-test :ROCAUC]))
+(-> cv-results
+    (tc/select-columns [:species :antibiotic :n-folds :mean-ROCAUC :std-ROCAUC]))
 
-;; ### E. coli — cross-year (A: 2017→2018)
+;; ### CV summary by species
 
-(def ecoli-cross-year
-  (->> (get bacteria/species->antibiotics bacteria/E-coli)
-       (mapv (fn [ab]
-               (scenarios/run-cross-year {:species bacteria/E-coli
-                                          :antibiotic ab
-                                          :site :A
-                                          :train-year 2017
-                                          :test-year 2018})))
-       tc/dataset))
+(-> cv-results
+    (tc/group-by [:species])
+    (tc/aggregate {:mean-ROCAUC #(-> % :mean-ROCAUC tcc/mean)
+                   :mean-std #(-> % :std-ROCAUC tcc/mean)
+                   :count tc/row-count})
+    (tc/order-by [:species]))
 
-(-> ecoli-cross-year
-    (tc/select-columns [:antibiotic :status :n-train :n-test :ROCAUC]))
+;; ### CV results plot
 
-;; ### E. coli — cross-site (A→C, 2018)
-
-(def ecoli-cross-site
-  (->> (get bacteria/species->antibiotics bacteria/E-coli)
-       (mapv (fn [ab]
-               (scenarios/run-cross-site {:species bacteria/E-coli
-                                          :antibiotic ab
-                                          :train-site :A
-                                          :test-site :C
-                                          :year 2018})))
-       tc/dataset))
-
-(-> ecoli-cross-site
-    (tc/select-columns [:antibiotic :status :n-train :n-test :ROCAUC]))
-
-;; ### Diagnosis: why results are missing
-;;
-;; The `:status` column reveals the reason for every outcome.
-;; Let's summarize:
-
-(def status-summary
-  (let [all (tc/concat ecoli-within ecoli-cross-year ecoli-cross-site)]
-    (-> all
-        (tc/group-by [:experiment :status])
-        (tc/aggregate {:count tc/row-count})
-        (tc/order-by [:experiment :status]))))
-
-status-summary
-
-;; ### Combined ROCAUC comparison
-;;
-;; Only experiments with `:status :ok` have meaningful ROCAUC:
-
-(def ecoli-combined
-  (let [tag (fn [ds label]
-              (-> ds
-                  (tc/select-rows #(= :ok (:status %)))
-                  (tc/select-columns [:antibiotic :ROCAUC])
-                  (tc/add-column :experiment label)))]
-    (tc/concat (tag ecoli-within "within-site")
-               (tag ecoli-cross-year "cross-year")
-               (tag ecoli-cross-site "cross-site"))))
-
-ecoli-combined
-
-;; ### ROCAUC comparison plot
-
-(when (pos? (tc/row-count ecoli-combined))
-  (-> ecoli-combined
-      (plotly/base {:=x :antibiotic
-                    :=y :ROCAUC
-                    :=color :experiment
-                    :=title "E. coli — ROCAUC by experiment type"})
-      plotly/layer-point
-      plotly/plot
-      (assoc-in [:layout :xaxis :tickangle] -45)))
+(-> cv-results
+    (plotly/base {:=x :antibiotic
+                  :=y :mean-ROCAUC
+                  :=color :species
+                  :=title "5-fold CV ROCAUC (mean ± std)"})
+    (plotly/layer-point {:=mark-size 10
+                         :=mark-opacity 0.7})
+    plotly/plot
+    (assoc-in [:layout :xaxis :tickangle] -45))
