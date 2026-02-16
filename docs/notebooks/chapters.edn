@@ -3,5 +3,6 @@
                           "preprocessing_driams"]
  "Prediction Pipeline"   ["single_prediction"
                           "caching_and_scenarios"
-                          "experiment_variations"]
+                          "experiment_variations"
+                          "diagnostic_plots"]
  "Full Walkthrough"      ["ml_pipeline_walkthrough"]}

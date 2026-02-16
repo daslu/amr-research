@@ -16,7 +16,7 @@ book:
   - part: Preprocessing
     chapters: [amr_book.preprocessing_explained.qmd, amr_book.preprocessing_driams.qmd]
   - part: Prediction Pipeline
-    chapters: [amr_book.single_prediction.qmd, amr_book.caching_and_scenarios.qmd, amr_book.experiment_variations.qmd]
+    chapters: [amr_book.single_prediction.qmd, amr_book.caching_and_scenarios.qmd, amr_book.experiment_variations.qmd, amr_book.diagnostic_plots.qmd]
   - part: Full Walkthrough
     chapters: [amr_book.ml_pipeline_walkthrough.qmd]
   title: AMR

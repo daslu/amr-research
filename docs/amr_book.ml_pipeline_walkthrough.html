@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>8&nbsp; ML Pipeline Walkthrough – AMR</title>
+<title>9&nbsp; ML Pipeline Walkthrough – AMR</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./amr_book.experiment_variations.html" rel="prev">
+<link href="./amr_book.diagnostic_plots.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
@@ -117,7 +117,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -217,6 +217,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Experiment Variations</span></span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./amr_book.diagnostic_plots.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Diagnostic Plots</span></span></a>
+  </div>
+</li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
@@ -231,7 +237,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./amr_book.ml_pipeline_walkthrough.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></span></a>
   </div>
 </li>
       </ul>
@@ -264,9 +270,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html">Full Walkthrough</a></li><li class="breadcrumb-item"><a href="./amr_book.ml_pipeline_walkthrough.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></h1>
+<h1 class="title"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">ML Pipeline Walkthrough</span></h1>
 </div>
 
 
@@ -383,7 +389,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<pre><code>23:41:40.626 [nREPL-session-f22e7546-f8fb-4c58-a0c2-64e2dda3ee94] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/prepare-raw-data /workspace/.cache/pocket/c4/(scicloj.amr.learning_prepare-raw-data {:antibiotic :Cefepime, :site :A, :species "Escherichia coli", :year 2018})
+<pre><code>16:32:50.292 [nREPL-session-af2642d0-19b6-4729-aca6-52b33b4e3d41] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/prepare-raw-data /workspace/.cache/pocket/c4/(scicloj.amr.learning_prepare-raw-data {:antibiotic :Cefepime, :site :A, :species "Escherichia coli", :year 2018})
 </code></pre>
 </div>
 </div>
@@ -437,7 +443,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<pre><code>23:41:47.335 [nREPL-session-f22e7546-f8fb-4c58-a0c2-64e2dda3ee94] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/prepare-ml-data /workspace/.cache/pocket/88/88bc206e4ef3f49271d1a644a14e2c7676b0924c
+<pre><code>16:32:56.807 [nREPL-session-af2642d0-19b6-4729-aca6-52b33b4e3d41] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/prepare-ml-data /workspace/.cache/pocket/88/88bc206e4ef3f49271d1a644a14e2c7676b0924c
 </code></pre>
 </div>
 </div>
@@ -491,7 +497,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-3" class="callout-3-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<pre><code>23:41:47.556 [nREPL-session-f22e7546-f8fb-4c58-a0c2-64e2dda3ee94] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/split /workspace/.cache/pocket/45/4522e71e313babe42221a60ed2802d788f2dc034
+<pre><code>16:32:57.067 [nREPL-session-af2642d0-19b6-4729-aca6-52b33b4e3d41] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/split /workspace/.cache/pocket/45/4522e71e313babe42221a60ed2802d788f2dc034
 </code></pre>
 </div>
 </div>
@@ -553,7 +559,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<pre><code>23:41:56.833 [nREPL-session-f22e7546-f8fb-4c58-a0c2-64e2dda3ee94] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/train /workspace/.cache/pocket/f9/f9d3e786ea47b587a25b0dbe61e17836c0173a63
+<pre><code>16:33:06.320 [nREPL-session-af2642d0-19b6-4729-aca6-52b33b4e3d41] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/train /workspace/.cache/pocket/f9/f9d3e786ea47b587a25b0dbe61e17836c0173a63
 </code></pre>
 </div>
 </div>
@@ -738,7 +744,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-5" class="callout-5-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<pre><code>23:41:56.953 [nREPL-session-f22e7546-f8fb-4c58-a0c2-64e2dda3ee94] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/predict /workspace/.cache/pocket/7f/7f84be3268acea8d79e2845e685a996a4acda8a5
+<pre><code>16:33:06.448 [nREPL-session-af2642d0-19b6-4729-aca6-52b33b4e3d41] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/predict /workspace/.cache/pocket/7f/7f84be3268acea8d79e2845e685a996a4acda8a5
 </code></pre>
 </div>
 </div>
@@ -796,7 +802,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div id="callout-6" class="callout-6-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<pre><code>23:41:56.956 [nREPL-session-f22e7546-f8fb-4c58-a0c2-64e2dda3ee94] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/measure /workspace/.cache/pocket/41/417a4449af575d32b0b597cbb26c7c79879a0220
+<pre><code>16:33:06.464 [nREPL-session-af2642d0-19b6-4729-aca6-52b33b4e3d41] DEBUG scicloj.pocket.impl.cache -- Cache hit (disk): scicloj.amr.learning/measure /workspace/.cache/pocket/41/417a4449af575d32b0b597cbb26c7c79879a0220
 </code></pre>
 </div>
 </div>
@@ -1251,8 +1257,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./amr_book.experiment_variations.html" class="pagination-link" aria-label="Experiment Variations">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Experiment Variations</span></span>
+      <a href="./amr_book.diagnostic_plots.html" class="pagination-link" aria-label="Diagnostic Plots">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Diagnostic Plots</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
