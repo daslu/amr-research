@@ -16,6 +16,8 @@
 ;; 4. **Multi-species sweep** — all species and antibiotics
 ;; 5. **Bidirectional cross-site** — A→C vs C→A transfer
 ;; 6. **K-fold cross-validation** — robust estimates with standard deviations
+;; 7. **Within-site at site C** — how does a smaller hospital compare?
+;; 8. **Comprehensive comparison** — all experiment types side by side
 
 (ns amr-book.experiment-variations
   (:require
@@ -309,7 +311,7 @@ within-site-metrics
 ;; ### Running the sweep
 
 (def sweep-species-list
-  [bacteria/E-coli bacteria/S-aureus bacteria/P-aeruginosa])
+  bacteria/important-bacteria)
 
 (def all-sweep-results
   (->> sweep-species-list
@@ -331,6 +333,32 @@ within-site-metrics
 ;; The `:ok` rows contain valid ROCAUC values. Other
 ;; statuses indicate data limitations (too few samples,
 ;; no data at the test site, or single-class test sets).
+
+(defn- plots-per-species
+  "Given a dataset with :species, :antibiotic, and a y-col,
+  produce a kind/fragment of separate plots per species
+  with consistent y-axis [0,1] and a shared x-axis
+  category order within each species."
+  ([ds color-col title-prefix]
+   (plots-per-species ds color-col title-prefix :ROCAUC))
+  ([ds color-col title-prefix y-col]
+   (->> (distinct (:species ds))
+        (mapv (fn [species]
+                (let [sub (tc/select-rows ds #(= species (:species %)))
+                      antibiotics (vec (distinct (:antibiotic sub)))]
+                  (-> sub
+                      (plotly/base {:=x :antibiotic
+                                    :=y y-col
+                                    :=color color-col
+                                    :=title (str title-prefix " — " species)})
+                      (plotly/layer-point {:=mark-size 10
+                                           :=mark-opacity 0.7})
+                      plotly/plot
+                      (assoc-in [:layout :yaxis :range] [0 1])
+                      (assoc-in [:layout :xaxis :tickangle] -45)
+                      (assoc-in [:layout :xaxis :categoryorder] "array")
+                      (assoc-in [:layout :xaxis :categoryarray] antibiotics)))))
+        kind/fragment)))
 
 (def ok-results
   (-> all-sweep-results
@@ -366,15 +394,7 @@ species-experiment-summary
 
 ;; ### All individual results
 
-(-> ok-results
-    (plotly/base {:=x :antibiotic
-                  :=y :ROCAUC
-                  :=color :experiment
-                  :=title "ROCAUC — all species and antibiotics"})
-    (plotly/layer-point {:=mark-size 10
-                         :=mark-opacity 0.7})
-    plotly/plot
-    (assoc-in [:layout :xaxis :tickangle] -45))
+(plots-per-species ok-results :experiment "ROCAUC")
 
 ;; ---
 
@@ -445,15 +465,7 @@ bidirectional-results
 
 ;; ### Bidirectional comparison plot
 
-(-> bidirectional-results
-    (plotly/base {:=x :antibiotic
-                  :=y :ROCAUC
-                  :=color :direction
-                  :=title "Cross-site ROCAUC — A→C vs C→A"})
-    (plotly/layer-point {:=mark-size 10
-                         :=mark-opacity 0.7})
-    plotly/plot
-    (assoc-in [:layout :xaxis :tickangle] -45))
+(plots-per-species bidirectional-results :direction "Cross-site ROCAUC")
 
 ;; ---
 
@@ -532,12 +544,138 @@ bidirectional-results
 
 ;; ### CV results plot
 
-(-> cv-results
-    (plotly/base {:=x :antibiotic
+(plots-per-species cv-results :species "5-fold CV ROCAUC" :mean-ROCAUC)
+
+;; ---
+
+;; ## Part 7 — Within-site at site C
+;;
+;; Site C is the second-largest
+;; [DRIAMS](https://doi.org/10.1038/s41591-021-01619-9)
+;; site with AMR labels. Running within-site holdout
+;; experiments here lets us compare classifier performance
+;; across hospitals using the same methodology.
+
+;; ### Helper: within-site sweep at site C
+
+(defn sweep-within-site-C
+  "Run within-site holdout experiments at site C (2018)
+  for all antibiotics of a given species. Returns a dataset."
+  [species]
+  (let [antibiotics (get bacteria/species->antibiotics species)]
+    (->> antibiotics
+         (mapv (fn [ab]
+                 (scenarios/run-within-site {:species species
+                                             :antibiotic ab
+                                             :site :C :year 2018})))
+         tc/dataset)))
+
+;; ### Running the site C sweep
+
+(def site-C-results
+  (->> sweep-species-list
+       (mapv sweep-within-site-C)
+       (apply tc/concat)))
+
+(-> site-C-results
+    (tc/select-columns [:species :antibiotic :status :n-train :n-test :ROCAUC]))
+
+;; ### Site A vs site C within-site comparison
+;;
+;; Combining the within-site results from Part 4 (site A)
+;; and site C to see whether both hospitals yield
+;; comparable classifier performance.
+
+(defn- tag-site [ds site-label]
+  (-> ds
+      (tc/select-rows #(= :ok (:status %)))
+      (tc/select-columns [:species :antibiotic :ROCAUC])
+      (tc/add-column :site site-label)))
+
+(def site-comparison
+  (let [site-A-within (-> all-sweep-results
+                          (tc/select-rows #(= :within-site (:experiment %))))]
+    (tc/concat
+     (tag-site site-A-within "A")
+     (tag-site site-C-results "C"))))
+
+site-comparison
+
+;; ### Mean ROCAUC by site and species
+
+(-> site-comparison
+    (tc/group-by [:species :site])
+    (tc/aggregate {:mean-ROCAUC #(-> % :ROCAUC tcc/mean)
+                   :count tc/row-count})
+    (tc/order-by [:species :site]))
+
+;; ### Site comparison plot
+
+(plots-per-species site-comparison :site "Within-site ROCAUC")
+;; ---
+
+;; ## Part 8 — Comprehensive comparison
+;;
+;; Combining all experiment types into one view:
+;; within-site at both sites, cross-year, and
+;; bidirectional cross-site.
+
+(def comprehensive-results
+  (tc/concat
+   (-> all-sweep-results
+       (tc/select-rows #(= :ok (:status %)))
+       (tc/select-columns [:species :antibiotic :experiment :ROCAUC])
+       (tc/map-columns :label [:experiment]
+                       #(case %
+                          :within-site "within-site A"
+                          :cross-year "cross-year 2017→2018"
+                          :cross-site "cross-site A→C"
+                          (name %))))
+   (-> site-C-results
+       (tc/select-rows #(= :ok (:status %)))
+       (tc/select-columns [:species :antibiotic :ROCAUC])
+       (tc/add-column :experiment :within-site-C)
+       (tc/add-column :label "within-site C"))
+   (-> all-reverse-results
+       (tc/select-rows #(= :ok (:status %)))
+       (tc/select-columns [:species :antibiotic :ROCAUC])
+       (tc/add-column :experiment :cross-site-reverse)
+       (tc/add-column :label "cross-site C→A"))))
+
+{:rows (tc/row-count comprehensive-results)
+ :experiment-types (distinct (:label comprehensive-results))}
+
+;; ### Mean ROCAUC by experiment type
+
+(def comprehensive-summary
+  (-> comprehensive-results
+      (tc/group-by [:label])
+      (tc/aggregate {:mean-ROCAUC #(-> % :ROCAUC tcc/mean)
+                     :count tc/row-count})
+      (tc/order-by [:mean-ROCAUC] :desc)))
+
+comprehensive-summary
+
+;; ### Mean ROCAUC by experiment type and species
+
+(-> comprehensive-results
+    (tc/group-by [:species :label])
+    (tc/aggregate {:mean-ROCAUC #(-> % :ROCAUC tcc/mean)
+                   :count tc/row-count})
+    (tc/order-by [:species :mean-ROCAUC] [:asc :desc]))
+
+;; ### Comprehensive bar chart
+
+(-> comprehensive-results
+    (tc/group-by [:species :label])
+    (tc/aggregate {:mean-ROCAUC #(-> % :ROCAUC tcc/mean)})
+    (plotly/base {:=x :species
                   :=y :mean-ROCAUC
-                  :=color :species
-                  :=title "5-fold CV ROCAUC (mean ± std)"})
-    (plotly/layer-point {:=mark-size 10
-                         :=mark-opacity 0.7})
-    plotly/plot
-    (assoc-in [:layout :xaxis :tickangle] -45))
+                  :=color :label
+                  :=title "Mean ROCAUC across all experiment types"})
+    (plotly/layer-bar {:=mark-opacity 0.8})
+    plotly/plot)
+
+;; ### All individual results
+
+(plots-per-species comprehensive-results :label "ROCAUC")
